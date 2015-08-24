@@ -1,0 +1,19 @@
+{
+  "name": "sqlite_parser",
+  "version": "1.0.0",
+  "description": "A jison parser for sqlite SQL grammar",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sqlite",
+    "grammar",
+    "parser"
+  ],
+  "author": "Wu Yuntao",
+  "license": "MIT",
+  "dependencies": {
+    "jison": "^0.4.15"
+  }
+}
