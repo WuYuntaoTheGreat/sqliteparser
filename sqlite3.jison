@@ -1,4 +1,6 @@
-/* vim: set nu ai et ts=4 sw=4: */
+/* vim: set nu ai et ts=4 sw=4 ft=yacc : */
+%{
+%}
 
 %start input EOF
 
@@ -688,5 +690,5 @@ wqlist
     | wqlist COMMA nm idxlist_opt AS LP select RP
     ;
 
-%%
+
 
