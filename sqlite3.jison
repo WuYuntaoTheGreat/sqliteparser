@@ -1,3 +1,9 @@
+/* vim: set nu ai et ts=4 sw=4: */
+
+%start input EOF
+
+%%
+
 input
     : cmdlist
     ;
@@ -681,4 +687,6 @@ wqlist
     : nm idxlist_opt AS LP select RP
     | wqlist COMMA nm idxlist_opt AS LP select RP
     ;
+
+%%
 
