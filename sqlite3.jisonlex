@@ -1,10 +1,17 @@
 /* vim: set nu ai et ts=4 sw=4 ft=lex: */
 
+%x C_COMMENT
+
 %%
-[ \t\n\f\r]     return "SPACE"
---[^\n]*\n        return "SPACE"
-/\*.*\*/        return "SPACE"
+
+[ \t\f\n\r]     /* Ignored white space */
+"--"[^\n]*\n    /* Ignored line comments */
+"/*"            { this.begin('C_COMMENT'); }
+<C_COMMENT>"*/" { this.begin('INITIAL'); }
+<C_COMMENT>.    /* Ignored block comments */
+<C_COMMENT>\n   /* Ignored block comments */
 ";"		        return "SEMI";
+
 "EXPLAIN"		return "EXPLAIN";
 "QUERY"		    return "QUERY";
 "PLAN"		    return "PLAN";
