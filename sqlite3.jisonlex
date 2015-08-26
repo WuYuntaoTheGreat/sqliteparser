@@ -1,4 +1,6 @@
 /* vim: set nu ai et ts=4 sw=4 ft=lex: */
+%{
+%}
 
 %x C_COMMENT
 
@@ -135,7 +137,7 @@
 "SELECT"        return "SELECT";
 "VALUES"        return "VALUES";
 "DISTINCT"      return "DISTINCT";
-"."             return "DOT"; /* AWARE: conflict with FLOAT */
+
 "FROM"          return "FROM";
 "JOIN"          return "JOIN";
 "USING"         return "USING";
@@ -145,17 +147,15 @@
 "LIMIT"         return "LIMIT";
 "WHERE"         return "WHERE";
 "INTO"          return "INTO";
-0[xX][0-9A-Fa-f]+ {
-                return "INTEGER";
-                }
-[0-9]+([Ee][\+\-]?[0-9]+)? {
-                return "INTEGER";
-                }
-[0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)? {
-                return "FLOAT";
-                }
+
+[0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)?  return "FLOAT"; /* Position matters */
+0[xX][0-9A-Fa-f]+                   return "INTEGER";
+[0-9]+([Ee][\+\-]?[0-9]+)?          return "INTEGER";
+"."             return "DOT"; /* AWARE: conflict with FLOAT, must after it. */
+
 [xX]'[^']+'     return "BLOB"; /* Ommit that (length % 2 == 0) */
 \?[0-9]*        return "VARIABLE"; /* Ommit $@#: */
+
 "CASE"          return "CASE";
 "WHEN"          return "WHEN";
 "THEN"          return "THEN";
