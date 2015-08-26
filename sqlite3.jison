@@ -17,17 +17,13 @@ cmdlist
 
 ecmd
     : SEMI
-    | explain cmdx SEMI
+    | explain cmd SEMI
     ;
 
 explain
     :
     | EXPLAIN
     | EXPLAIN QUERY PLAN
-    ;
-
-cmdx
-    : cmd
     ;
 
 cmd
