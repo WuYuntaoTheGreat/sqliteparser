@@ -179,11 +179,6 @@
 "OUTER"         return "JOIN_KW"; /* JOIN_KW */
 "RIGHT"         return "JOIN_KW"; /* JOIN_KW */
 
-"\""[^"]*"\""   return "ID";
-"`"[^`]*"`"     return "ID";
-"["[^\]]*"]"    return "ID";
-"'"[^']*"'"     return "STRING";
-
 [0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)?  return "FLOAT"; /* Position matters */
 0[xX][0-9A-Fa-f]+                   return "INTEGER";
 [0-9]+([Ee][\+\-]?[0-9]+)?          return "INTEGER";
@@ -191,6 +186,12 @@
 
 [xX]\'[^\']+\'  return "BLOB"; /* Ommit that (length % 2 == 0) */
 "?"[0-9]*       return "VARIABLE"; /* Ommit $@#: */
+
+"'"[^']*"'"     return "STRING";
+"\""[^"]*"\""   return "ID";
+"`"[^`]*"`"     return "ID";
+"["[^\]]*"]"    return "ID";
+[_A-Za-z][_A-Za-z0-9]+              return "ID";
 
 <<EOF>>         return "EOF";
 
