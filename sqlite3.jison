@@ -1,37 +1,52 @@
 /* vim: set nu ai et ts=4 sw=4 ft=yacc : */
 %{
 require("coffee-script/register");
-var bigHandler = require("../big_handler");
+var BIG = require("../big_handler");
+var BIG_T = BIG.terminal;
+var BIG_C = BIG.cmd;
+
 %}
 
-%start input EOF
-
+%start input
 %%
 
 input
-    : cmdlist
+    : cmdlist EOF
+        { 
+            console.log(JSON.stringify($1, null, "  ")); 
+        }
     ;
 
 cmdlist
     : cmdlist ecmd
+        { $1.push($2); }
     | ecmd
+        { $$ = [ $1 ]; }
     ;
 
 ecmd
     : SEMI
+        { $$ = BIG.ecmd(); }
     | explain cmd SEMI
+        { $$ = BIG.ecmd($1, $2); }
     ;
 
 explain
     :
+        { $$ = BIG.explain(false, false); }
     | EXPLAIN
+        { $$ = BIG.explain(true, false); }
     | EXPLAIN QUERY PLAN
+        { $$ = BIG.explain(true, true); }
     ;
 
 cmd
     : BEGIN transtype trans_opt
+        { $$ = BIG_C.begin_trans($2, $3); }
     | COMMIT trans_opt
+        { $$ = BIG_C.commit_trans($2); }
     | END trans_opt
+        { $$ = BIG_C.end_trans($2); }
     | ROLLBACK trans_opt
     | SAVEPOINT nm
     | RELEASE savepoint_opt nm
@@ -48,7 +63,9 @@ cmd
     | createkw uniqueflag INDEX ifnotexists nm dbnm ON nm LP idxlist RP where_opt
     | DROP INDEX ifexists fullname
     | VACUUM
+        { $$ = BIG_C.vacuum(); }
     | VACUUM nm
+        { $$ = BIG_C.vacuum($2); }
     | PRAGMA nm dbnm
     | PRAGMA nm dbnm EQ nmnum
     | PRAGMA nm dbnm LP nmnum RP
@@ -59,7 +76,9 @@ cmd
     | ATTACH database_kw_opt expr AS expr key_opt
     | DETACH database_kw_opt expr
     | REINDEX
+        { $$ = BIG_C.reindex(); }
     | REINDEX nm dbnm
+        { $$ = BIG_C.reindex($2, $3); }
     | ANALYZE
     | ANALYZE nm dbnm
     | ALTER TABLE fullname RENAME TO nm
@@ -70,15 +89,22 @@ cmd
 
 trans_opt
     :
+        { $$ = BIG.trans_opt(); }
     | TRANSACTION
+        { $$ = BIG.trans_opt(); }
     | TRANSACTION nm
+        { $$ = BIG.trans_opt($2); }
     ;
 
 transtype
     :
+        { $$ = BIG.transtype(); }
     | DEFERRED
+        { $$ = BIG.transtype($1); }
     | IMMEDIATE
+        { $$ = BIG.transtype($1); }
     | EXCLUSIVE
+        { $$ = BIG.transtype($1); }
     ;
 
 savepoint_opt
@@ -129,9 +155,13 @@ columnid
 
 nm
     : ID
+        { $$ = BIG.nm($1, 'ID', BIG_T.id(yytext)); }
     | INDEXED
+        { $$ = BIG.nm($1, 'INDEXED'); }
     | STRING
+        { $$ = BIG.nm($1, 'STRING', BIG_T.string(yytext)); }
     | JOIN_KW
+        { $$ = BIG.nm($1, 'JOIN_KW', Big.terminal.join_kw(yytext)); }
     ;
 
 type
@@ -335,7 +365,9 @@ seltablist
 
 dbnm
     :
+        { $$ = BIG.dbnm(); }
     | DOT nm
+        { $$ = BIG.dbnm($2); }
     ;
 
 fullname
