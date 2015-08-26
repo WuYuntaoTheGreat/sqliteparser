@@ -1,3 +1,5 @@
+# vim: set nu ai et ts=4 sw=4:
+#
 full_nm_name = (nm, dbnm)->
     if !nm || !nm.value
         result = null
