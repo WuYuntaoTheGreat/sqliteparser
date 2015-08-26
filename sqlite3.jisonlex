@@ -38,7 +38,7 @@
 "WITHOUT"       return "WITHOUT";
 ","             return "COMMA";
 \"[^"]*\"       return "ID";
-`[^`]*`         return "ID";
+\`[^`]*\`       return "ID";
 \[[^\]]*\]      return "ID";
 "INDEXED"       return "INDEXED";
 "ABORT"         return "ABORT";
