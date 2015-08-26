@@ -6,54 +6,84 @@ ssubstring = (str, start, end)->
         str.substring start, str.length + end
 
 module.exports =
-    ecmd: (thiz, explain, cmd)->
-        thiz.$ =
-            nt_name: 'ecmd'
+    ecmd: (explain, cmd)->
+        $ =
+            node: 'ecmd'
+            isTerminal: false
             explain: explain
             cmd: cmd
-    explain: (thiz, explain, queryPlan)->
-        thiz.$ =
-            nt_name: 'explain'
+    explain: (explain, queryPlan)->
+        $ =
+            node: 'explain'
+            isTerminal: false
             explain: explain
             queryPlan: queryPlan
+
+    nm: (raw, type, value)->
+        $ =
+            node: 'nm'
+            isTerminal: false
+            raw: raw
+            type: type
+            value: value
+
+    ########################################
+    # The commands
+    ########################################
     cmd:
-        vacuum: (thiz, nm)->
-            thiz.$ =
-                nt_name: 'cmd.vaccum'
+        vacuum: (nm)->
+            $ =
+                node: 'cmd'
+                isTerminal: false
+                type: 'vacuum'
                 nm: nm
 
+
+    ########################################
+    # The terminals with values
+    ########################################
     terminal:
-        dot: (thiz)->
-            thiz.$ =
-                nt_name: 'DOT'
-        id: (thiz, value)->
-            thiz.$ =
-                nt_name: 'ID'
+        id: (value)->
+            $ =
+                node: 'ID'
+                isTerminal: true
                 raw: value
                 value: ssubstring value, 1, -1
-        string: (thiz, value)->
-            thiz.$ =
-                nt_name: 'STRING'
+        string: (value)->
+            $ =
+                node: 'STRING'
+                isTerminal: true
                 value: ssubstring value, 1, -1
-        integer: (thiz, value)->
-            thiz.$ =
-                nt_name: 'INTEGER'
+        integer: (value)->
+            $ =
+                node: 'INTEGER'
+                isTerminal: true
                 raw: value
                 value: parseInt value
-        float: (thiz, value)->
-            thiz.$ =
-                nt_name: 'FLOAT'
+        float: (value)->
+            $ =
+                node: 'FLOAT'
+                isTerminal: true
                 raw: value
                 value: parseFloat value
-        variable: (thiz, value)->
-            thiz.$ =
-                nt_name: 'VARIABLE'
+        variable: (value)->
+            $ =
+                node: 'VARIABLE'
+                isTerminal: true
                 raw: value
                 position: parseInt ssubstring value, 1, 0
-        blob: (thiz, value)->
-            thiz.$ =
-                nt_name: 'BLOB'
+        blob: (value)->
+            $ =
+                node: 'BLOB'
+                isTerminal: true
                 raw: value
                 value: ssubstring value, 2, -1
+        join_kw: (value)->
+            $ =
+                node: 'JOIN_KW'
+                isTerminal: true
+                type: value
+
+                    
 
 
