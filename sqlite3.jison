@@ -155,9 +155,9 @@ columnid
 
 nm
     : ID
-        { $$ = BIG.nm($1, 'ID', BIG_T.id(yytext)); }
-    | INDEXED
-        { $$ = BIG.nm($1, 'INDEXED'); }
+        { $$ = BIG.nm($1, 'ID', BIG_T.id(yytext)); 
+    /* | INDEXED
+        { $$ = BIG.nm($1, 'INDEXED'); } */ /* I think this is wrong */}
     | STRING
         { $$ = BIG.nm($1, 'STRING', BIG_T.string(yytext)); }
     | JOIN_KW
