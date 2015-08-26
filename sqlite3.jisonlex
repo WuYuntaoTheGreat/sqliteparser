@@ -110,7 +110,7 @@
 "||"            return "CONCAT";
 "COLLATE"       return "COLLATE";
 "~"             return "BITNOT";
-\'[^']*'        return "STRING";
+\'[^']*\'       return "STRING";
 "JOIN_KW"       return "JOIN_KW";
 "CONSTRAINT"    return "CONSTRAINT";
 "DEFAULT"       return "DEFAULT";
