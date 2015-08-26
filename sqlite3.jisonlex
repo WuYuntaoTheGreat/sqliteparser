@@ -39,9 +39,12 @@
 "AS"            return "AS";
 "WITHOUT"       return "WITHOUT";
 ","             return "COMMA";
-\"[^"]*\"       return "ID";
-\`[^`]*\`       return "ID";
-\[[^\]]*\]      return "ID";
+
+"\""[^"]*"\""   return "ID";
+"`"[^`]*"`"     return "ID";
+"["[^\]]*"]"    return "ID";
+"'"[^']*"'"     return "STRING";
+
 "INDEXED"       return "INDEXED";
 "ABORT"         return "ABORT";
 "ACTION"        return "ACTION";
@@ -92,27 +95,28 @@
 "IN"            return "IN";
 "ISNULL"        return "ISNULL";
 "NOTNULL"       return "NOTNULL";
+"ESCAPE"        return "ESCAPE";
+"COLLATE"       return "COLLATE";
+
 "<>"            return "NE";
 "!="            return "NE";
 "="             return "EQ";
+"<<"            return "LSHIFT";
+">>"            return "RSHIFT";
+">="            return "GE";
 ">"             return "GT";
 "<="            return "LE";
 "<"             return "LT";
-">="            return "GE";
-"ESCAPE"        return "ESCAPE";
 "&"             return "BITAND";
-"|"             return "BITOR";
-"<<"            return "LSHIFT";
-">>"            return "RSHIFT";
 "+"             return "PLUS";
 "-"             return "MINUS";
 "*"             return "STAR";
 "/"             return "SLASH";
 "%"             return "REM";
 "||"            return "CONCAT";
-"COLLATE"       return "COLLATE";
+"|"             return "BITOR";
 "~"             return "BITNOT";
-\'[^']*\'       return "STRING";
+
 "JOIN_KW"       return "JOIN_KW";
 "CONSTRAINT"    return "CONSTRAINT";
 "DEFAULT"       return "DEFAULT";
@@ -148,6 +152,14 @@
 "WHERE"         return "WHERE";
 "INTO"          return "INTO";
 
+"CASE"          return "CASE";
+"WHEN"          return "WHEN";
+"THEN"          return "THEN";
+"ELSE"          return "ELSE";
+"INDEX"         return "INDEX";
+"ALTER"         return "ALTER";
+"ADD"           return "ADD";
+
 [0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)?  return "FLOAT"; /* Position matters */
 0[xX][0-9A-Fa-f]+                   return "INTEGER";
 [0-9]+([Ee][\+\-]?[0-9]+)?          return "INTEGER";
@@ -156,12 +168,5 @@
 [xX]'[^']+'     return "BLOB"; /* Ommit that (length % 2 == 0) */
 \?[0-9]*        return "VARIABLE"; /* Ommit $@#: */
 
-"CASE"          return "CASE";
-"WHEN"          return "WHEN";
-"THEN"          return "THEN";
-"ELSE"          return "ELSE";
-"INDEX"         return "INDEX";
-"ALTER"         return "ALTER";
-"ADD"           return "ADD";
 <<EOF>>         return "EOF";
 
