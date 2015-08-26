@@ -1,5 +1,7 @@
 /* vim: set nu ai et ts=4 sw=4 ft=yacc : */
 %{
+require("coffee-script/register");
+var bigHandler = require("../big_handler");
 %}
 
 %start input EOF

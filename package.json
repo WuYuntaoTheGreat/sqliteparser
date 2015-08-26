@@ -14,6 +14,7 @@
   "author": "Wu Yuntao",
   "license": "MIT",
   "dependencies": {
+    "coffee-script": "^1.9.3",
     "jison": "^0.4.15"
   }
 }
