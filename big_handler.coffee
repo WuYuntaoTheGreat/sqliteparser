@@ -21,20 +21,34 @@ module.exports = G =
             explain: explain
             queryPlan: queryPlan
 
-    nm: (raw, type, terminal)->
-        terminal ?= null
-        value = if terminal then terminal.value else null
+    nm: (subnode, type)->
+        switch type
+            when 'ID'       then value = subnode.value
+            when 'STRING'   then value = subnode.value
+            when 'JOIN_KW'  then value = subnode.type
+            else
+                value = null
         $$ =
             node: 'nm'
-            raw: raw
             type: type
             value: value
-            terminal: terminal
+            subnode: subnode
 
     dbnm: (nm)->
         $$ =
             node: 'dbnm'
             nm: nm
+
+    nmnum: (type, subnode)->
+        if 'PLUS_NUM' == type or 'NM' == type
+            value = subnode.value
+        else
+            value = type
+        $$ =
+            node: 'nmnum'
+            type: type
+            subnode: subnode
+            value: value
 
     trans_opt: (nm)->
         nm ?= null
@@ -61,6 +75,34 @@ module.exports = G =
             node: "nm_full"
             nm: nm
             dbnm: dbnm
+            value: value
+    ifexists: (ifexists)->
+        $$ =
+            node: 'ifexists'
+            ifexists: ifexists
+    column: (columnid, type, carglist)->
+        $$ =
+            node: 'column'
+            columnid: columnid
+            type: type
+            carglist: carglist
+    typetoken: (typename, param1, param2)->
+        param1 ?= null
+        param2 ?= null
+        $$ =
+            node: 'typetoken'
+            param1: param1
+            param2: param2
+
+    term: (type, subnode)->
+        subnode ?= null
+        if 'NULL' == type
+            value = type
+        else
+            value = subnode.value
+        $$ =
+            node: 'term'
+            subnode: subnode
             value: value
 
 
@@ -111,6 +153,40 @@ module.exports = G =
                 type: 'rollback_savepoint'
                 trans_opt: trans_opt
                 nm: nm
+        drop_table: (ifexists, fullname)->
+            $$ =
+                node: 'cmd'
+                type: 'drop_table'
+                ifexists: ifexists
+                fullname: fullname
+        drop_view: (ifexists, fullname)->
+            $$ =
+                node: 'cmd'
+                type: 'drop_view'
+                ifexists: ifexists
+                fullname: fullname
+        drop_index: (ifexists, fullname)->
+            $$ =
+                node: 'cmd'
+                type: 'drop_index'
+                ifexists: ifexists
+                fullname: fullname
+        drop_trigger: (ifexists, fullname)->
+            $$ =
+                node: 'cmd'
+                type: 'drop_trigger'
+                ifexists: ifexists
+                fullname: fullname
+        pragma: (key, operator, value)->
+            operator ?= null
+            value ?= null
+            $$ =
+                node: 'cmd'
+                type: 'pragma'
+                key: key
+                operator: operator
+                value: value
+
         reindex: (fullname)->
             $$ =
                 node: 'cmd'
@@ -142,16 +218,33 @@ module.exports = G =
                 node: 'INTEGER'
                 raw: value
                 value: parseInt value
+                toNegative: ()->
+                    @raw = "-" + @raw
+                    @value = - @value
+                    this
         float: (value)->
             $$ =
                 node: 'FLOAT'
                 raw: value
                 value: parseFloat value
+                toNegative: ()->
+                    @raw = "-" + @raw
+                    @value = - @value
+                    this
         variable: (value)->
+            position = null
+            name = null
+            if value != undefined
+                if '?' == value[0]
+                    position = parseInt ssubstring value, 1, 0
+                else
+                    name = ssubstring value, 1, 0
             $$ =
                 node: 'VARIABLE'
                 raw: value
-                position: parseInt ssubstring value, 1, 0
+                position: position
+                name: name
+
         blob: (value)->
             $$ =
                 node: 'BLOB'

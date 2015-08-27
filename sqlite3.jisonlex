@@ -1,5 +1,9 @@
 /* vim: set nu ai et ts=4 sw=4 ft=lex: */
 %{
+require("coffee-script/register");
+var G = require("../big_handler");
+var G_T = G.terminal;
+
 %}
 
 %x C_COMMENT
@@ -64,8 +68,6 @@
 
 "AS"            return "AS";
 "WITHOUT"       return "WITHOUT";
-
-
 "INDEXED"       return "INDEXED";
 "ABORT"         return "ABORT";
 "ACTION"        return "ACTION";
@@ -107,11 +109,9 @@
 "REINDEX"       return "REINDEX";
 "RENAME"        return "RENAME";
 
-"CURRENT_DATE"  return "CTIME_KW"; /* CTIME_KW */
-"CURRENT_TIME"  return "CTIME_KW"; /* CTIME_KW */
-"CURRENT_TIMESTAMP" {
-                return "CTIME_KW"; /* CTIME_KW */
-                }
+"CURRENT_DATE"      { yytext = G_T.ctime_kw(yytext); return "CTIME_KW"; }
+"CURRENT_TIME"      { yytext = G_T.ctime_kw(yytext); return "CTIME_KW"; }
+"CURRENT_TIMESTAMP" { yytext = G_T.ctime_kw(yytext); return "CTIME_KW"; }
 
 "ANY"           return "ANY";
 "OR"            return "OR";
@@ -167,36 +167,53 @@
 "ALTER"         return "ALTER";
 "ADD"           return "ADD";
 
-"GLOB"          return "LIKE_KW"; /* LIKE_KW */
-"LIKE"          return "LIKE_KW"; /* LIKE_KW */
-"REGEXP"        return "LIKE_KW"; /* LIKE_KW */
+"GLOB"      { yytext = G_T.like_kw(yytext); return "LIKE_KW"; }
+"LIKE"      { yytext = G_T.like_kw(yytext); return "LIKE_KW"; }
+"REGEXP"    { yytext = G_T.like_kw(yytext); return "LIKE_KW"; }
 
-"CROSS"         return "JOIN_KW"; /* JOIN_KW */
-"FULL"          return "JOIN_KW"; /* JOIN_KW */
-"INNER"         return "JOIN_KW"; /* JOIN_KW */
-"LEFT"          return "JOIN_KW"; /* JOIN_KW */
-"NATURAL"       return "JOIN_KW"; /* JOIN_KW */
-"OUTER"         return "JOIN_KW"; /* JOIN_KW */
-"RIGHT"         return "JOIN_KW"; /* JOIN_KW */
+"CROSS"     { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"FULL"      { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"INNER"     { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"LEFT"      { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"NATURAL"   { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"OUTER"     { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
+"RIGHT"     { yytext = G_T.join_kw(yytext); return "JOIN_KW"; }
 
-[0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)?  { /* Position matters */
+[0-9]*\.[0-9]+([Ee][\+\-]?[0-9]+)?  {
+                yytext = G_T.float(yytext);
                 return "FLOAT";     }
 0[xX][0-9A-Fa-f]+                   {
+                yytext = G_T.integer(yytext);
                 return "INTEGER";   }
 [0-9]+([Ee][\+\-]?[0-9]+)?          {
+                yytext = G_T.integer(yytext);
                 return "INTEGER";   }
 "."             return "DOT"; /* AWARE: conflict with FLOAT, must after it. */
 
-[xX]\'[^\']+\'  return "BLOB"; /* Ommit that (length % 2 == 0) */
-"?"[0-9]*       return "VARIABLE";
-[:@\$][_A-Za-z][_A-Za-z0-9]+        {
-                return "VARIABLE";  }
 
-"'"[^']*"'"     return "STRING";
-"\""[^"]*"\""   return "ID";
-"`"[^`]*"`"     return "ID";
-"["[^\]]*"]"    return "ID";
+[xX]\'[^\']+\'                      { /* Ommit that (length % 2 == 0) */
+                yytext = G_T.blob(yytext);
+                return "BLOB";      }
+"?"[0-9]*                           {
+                yytext = G_T.variable(yytext);
+                return "VARIABLE";  }
+[:@\$][_A-Za-z][_A-Za-z0-9]+        {
+                yytext = G_T.variable(yytext);
+                return "VARIABLE";  }
+"'"[^']*"'"                         {
+                yytext = G_T.string(yytext);
+                return "STRING";    }
+"\""[^"]*"\""                       {
+                yytext = G_T.id(yytext);
+                return "ID";        }
+"`"[^`]*"`"                         {
+                yytext = G_T.id(yytext);
+                return "ID";        }
+"["[^\]]*"]"                        {
+                yytext = G_T.id(yytext);
+                return "ID";        }
 [_A-Za-z][_A-Za-z0-9]+              {
+                yytext = G_T.id(yytext);
                 return "ID";        }
 
 <<EOF>>         return "EOF";

@@ -2,7 +2,6 @@
 %{
 require("coffee-script/register");
 var G = require("../big_handler");
-var G_T = G.terminal;
 var G_C = G.cmd;
 
 %}
@@ -12,8 +11,8 @@ var G_C = G.cmd;
 
 input
     : cmdlist EOF
-        { 
-            console.log(JSON.stringify($1, null, "  ")); 
+        {
+            console.log(JSON.stringify($1, null, "  "));
         }
     ;
 
@@ -57,27 +56,35 @@ cmd
         { $$ = G_C.rollback_savepoint($2, $5); }
     | create_table create_table_args
     | DROP TABLE ifexists fullname
+        { $$ = G_C.drop_table($3, $4); }
     | createkw temp VIEW ifnotexists fullname AS select
     | DROP VIEW ifexists fullname
+        { $$ = G_C.drop_view($3, $4); }
     | select
     | with DELETE FROM fullname indexed_opt where_opt
     | with UPDATE orconf fullname indexed_opt SET setlist where_opt
     | with insert_cmd INTO fullname inscollist_opt select
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
     | createkw uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
-        { $$ = G.fullname($1, $2); }
     | DROP INDEX ifexists fullname
+        { $$ = G_C.drop_index($3, $3); }
     | VACUUM
         { $$ = G_C.vacuum(); }
     | VACUUM nm
         { $$ = G_C.vacuum($2); }
     | PRAGMA fullname
+        { $$ = G_C.pragma($2); }
     | PRAGMA fullname EQ nmnum
+        { $$ = G_C.pragma($2, "=", $4); }
     | PRAGMA fullname LP nmnum RP
+        { $$ = G_C.pragma($2, "()", $4); }
     | PRAGMA fullname EQ minus_num
+        { $$ = G_C.pragma($2, "=", $4); }
     | PRAGMA fullname LP minus_num RP
+        { $$ = G_C.pragma($2, "()", $4); }
     | createkw trigger_decl BEGIN trigger_cmd_list END
     | DROP TRIGGER ifexists fullname
+        { $$ = G_C.drop_trigger($3, $4); }
     | ATTACH database_kw_opt expr AS expr key_opt
     | DETACH database_kw_opt expr
     | REINDEX
@@ -149,54 +156,71 @@ table_options
 
 columnlist
     : columnlist COMMA column
+        { $1.push($3); }
     | column
+        { $$ = [ $1 ]; }
     ;
 
 column
     : columnid type carglist
+        { $$ = G.column($1, $2, $3); }
     ;
 
 columnid
     : nm
+        { $$ = $1; }
     ;
 
 nm
     : ID
-        { $$ = G.nm($1, 'ID', G_T.id(yytext)); 
+        { $$ = G.nm($1, "ID");
     /* | INDEXED
-        { $$ = G.nm($1, 'INDEXED'); } */ /* I think this is wrong */}
+        { $$ = G.nm($1, "INDEXED"); } */ /* I think this is wrong */ }
     | STRING
-        { $$ = G.nm($1, 'STRING', G_T.string(yytext)); }
+        { $$ = G.nm($1, "STRING"); }
     | JOIN_KW
-        { $$ = G.nm($1, 'JOIN_KW', G_T.join_kw(yytext)); }
+        { $$ = G.nm($1, "JOIN_KW"); }
     ;
 
 type
     :
+        { $$ = null; }
     | typetoken
+        { $$ = $1; }
     ;
 
 typetoken
     : typename
+        { $$ = G.typetoken($1); }
     | typename LP signed RP
+        { $$ = G.typetoken($1, $3); }
     | typename LP signed COMMA signed RP
+        { $$ = G.typetoken($1, $3, $5); }
     ;
 
 typename
     : ID
+        { $$ = [ $1 ]; }
     | STRING
+        { $$ = [ $1 ]; }
     | typename ID
+        { $1.push($2); }
     | typename STRING
+        { $1.push($2); }
     ;
 
 signed
     : plus_num
+        { $$ = $1; }
     | minus_num
+        { $$ = $1; }
     ;
 
 carglist
     :
+        { $$ = []; }
     | carglist ccons
+        { $1.push($2); }
     ;
 
 ccons
@@ -300,7 +324,9 @@ resolvetype
 
 ifexists
     :
+        { $$ = G.ifexists(false); }
     | IF EXISTS
+        { $$ = G.ifexists(true); }
     ;
 
 select
@@ -522,11 +548,17 @@ expr
 
 term
     : NULL
+        { $$ = G.term("NULL"); }
     | INTEGER
+        { $$ = G.term("INTEGER", $1); }
     | FLOAT
+        { $$ = G.term("FLOAT", $1); }
     | BLOB
+        { $$ = G.term("BLOB", $1); }
     | STRING
+        { $$ = G.term("STRING", $1); }
     | CTIME_KW
+        { $$ = G.term("CTIME_KW", $1); }
     ;
 
 likeop
@@ -594,22 +626,33 @@ collate
 
 nmnum
     : plus_num
+        { $$ = G.nmnum("PLUS_NUM", $1); }
     | nm
+        { $$ = G.nmnum("NM", $1); }
     | ON
+        { $$ = G.nmnum("ON"); }
     | DELETE
+        { $$ = G.nmnum("DELETE"); }
     | DEFAULT
+        { $$ = G.nmnum("DEFAULT"); }
     ;
 
 plus_num
     : PLUS INTEGER
+        { $$ = $1; }
     | PLUS FLOAT
+        { $$ = $1; }
     | INTEGER
+        { $$ = $1; }
     | FLOAT
+        { $$ = $1; }
     ;
 
 minus_num
     : MINUS INTEGER
+        { $$ = $2.toNegative(); }
     | MINUS FLOAT
+        { $$ = $2.toNegative(); }
     ;
 
 trigger_decl
