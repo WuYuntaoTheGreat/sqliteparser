@@ -55,6 +55,7 @@ cmd
     | ROLLBACK trans_opt TO savepoint_opt nm
         { $$ = G_C.rollback_savepoint($2, $5); }
     | create_table create_table_args
+        { $$ = G_C.create_table($1, $2); }
     | DROP TABLE ifexists fullname
         { $$ = G_C.drop_table($3, $4); }
     | createkw temp VIEW ifnotexists fullname AS select
@@ -133,7 +134,7 @@ savepoint_opt
 
 create_table
     : createkw temp TABLE ifnotexists fullname
-        { $$ = G_C.create_table($2, $4, $5); }
+        { $$ = G.create_table($2, $4, $5); }
     ;
 
 createkw
@@ -157,12 +158,16 @@ temp
 
 create_table_args
     : LP columnlist conslist_opt RP table_options
+        { $$ = G.create_table_args(); }
     | AS select
+        { $$ = G.create_table_args_as($2); }
     ;
 
 table_options
     :
+        { $$ = G.table_options(); }
     | WITHOUT nm
+        { $$ = G.table_options($2); }
     ;
 
 columnlist
@@ -318,7 +323,7 @@ conslist
     : conslist tconscomma tcons
         { $1.push($3); }
     | tcons
-        { $$ = [ $1 ]; } 
+        { $$ = [ $1 ]; }
     ;
 
 tconscomma
@@ -378,6 +383,7 @@ ifexists
 
 select
     : with selectnowith
+        { $$ = G.select($1, $2); }
     ;
 
 selectnowith
@@ -404,8 +410,11 @@ values
 
 distinct
     :
+        { $$ = G.distinct(); }
     | DISTINCT
+        { $$ = G.distinct($1); }
     | ALL
+        { $$ = G.distinct($1); }
     ;
 
 sclp
@@ -842,13 +851,18 @@ anylist
 
 with
     :
+        { $$ = null }
     | WITH wqlist
+        { $$ = G.with(false, $2); }
     | WITH RECURSIVE wqlist
+        { $$ = G.with(true, $2); }
     ;
 
 wqlist
     : nm idxlist_opt AS LP select RP
+        { $$ = [ G.wqlist_item($1, $2, $5) ]; }
     | wqlist COMMA nm idxlist_opt AS LP select RP
+        { $1.push(G.wqlist_item($1, $2, $5)); }
     ;
 
 

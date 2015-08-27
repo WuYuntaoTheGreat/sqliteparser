@@ -171,6 +171,52 @@ module.exports = G =
             no_defer: no_defer
             init_opt: init_opt
 
+    table_options: (nm)->
+        nm ?= null
+        $$ =
+            node: 'table_options'
+            without: nm
+
+    create_table_args_as: (nm)->
+        $$ =
+            node: 'create_table_args'
+            type: 'as'
+            as: nm
+    create_table_args: (columnlist, conslist, table_options)->
+        $$ =
+            node: 'create_table_args'
+            type: 'normal'
+            columnlist: columnlist
+            conslist: conslist
+            table_options: table_options
+    distinct: (value)->
+        value ?= null
+        $$ =
+            node: 'distinct'
+            value: value
+
+    create_table: (temp, ifnotexists, fullname)>
+        $$ =
+            node: 'create_table'
+            temp: temp
+            ifnotexists: ifnotexists
+            fullname: fullname
+    select: (_with, selectnowith)->
+        $$ =
+            node: 'select'
+            with: _with
+            selectnowith: selectnowith
+    with: (recursive, wqlist)->
+        $$ =
+            node: 'with'
+            recursive: recursive
+            wqlist: wqlist
+    wqlist_item: (nm, idxlist, select)->
+        $$ =
+            node: 'wqlist_item'
+            nm: nm
+            idxlist: idxlist
+            select: select
 
     ########################################
     # tcons, Table Creation Options
@@ -283,6 +329,13 @@ module.exports = G =
                 type: 'drop_trigger'
                 ifexists: ifexists
                 fullname: fullname
+        create_table: (create, args)->
+            $$ =
+                node: 'cmd'
+                type: 'create_table'
+                create: create
+                args: args
+
         pragma: (key, operator, value)->
             operator ?= null
             value ?= null
@@ -292,13 +345,6 @@ module.exports = G =
                 key: key
                 operator: operator
                 value: value
-        create_table: (temp, ifnotexists, fullname)>
-            $$ =
-                node: 'cmd'
-                type: 'create_table'
-                temp: temp
-                ifnotexists: ifnotexists
-                fullname: fullname
 
         reindex: (fullname)->
             $$ =
