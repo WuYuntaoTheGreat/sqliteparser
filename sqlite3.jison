@@ -57,36 +57,37 @@ cmd
         { $$ = G_C.rollback_savepoint($2, $5); }
     | create_table create_table_args
     | DROP TABLE ifexists fullname
-    | createkw temp VIEW ifnotexists nm dbnm AS select
+    | createkw temp VIEW ifnotexists fullname AS select
     | DROP VIEW ifexists fullname
     | select
     | with DELETE FROM fullname indexed_opt where_opt
     | with UPDATE orconf fullname indexed_opt SET setlist where_opt
     | with insert_cmd INTO fullname inscollist_opt select
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
-    | createkw uniqueflag INDEX ifnotexists nm dbnm ON nm LP idxlist RP where_opt
+    | createkw uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
+        { $$ = G.fullname($1, $2); }
     | DROP INDEX ifexists fullname
     | VACUUM
         { $$ = G_C.vacuum(); }
     | VACUUM nm
         { $$ = G_C.vacuum($2); }
-    | PRAGMA nm dbnm
-    | PRAGMA nm dbnm EQ nmnum
-    | PRAGMA nm dbnm LP nmnum RP
-    | PRAGMA nm dbnm EQ minus_num
-    | PRAGMA nm dbnm LP minus_num RP
+    | PRAGMA fullname
+    | PRAGMA fullname EQ nmnum
+    | PRAGMA fullname LP nmnum RP
+    | PRAGMA fullname EQ minus_num
+    | PRAGMA fullname LP minus_num RP
     | createkw trigger_decl BEGIN trigger_cmd_list END
     | DROP TRIGGER ifexists fullname
     | ATTACH database_kw_opt expr AS expr key_opt
     | DETACH database_kw_opt expr
     | REINDEX
         { $$ = G_C.reindex(); }
-    | REINDEX nm dbnm
-        { $$ = G_C.reindex($2, $3); }
+    | REINDEX fullname
+        { $$ = G_C.reindex($2); }
     | ANALYZE
         { $$ = G_C.analyze(); }
-    | ANALYZE nm dbnm
-        { $$ = G_C.analyze($2, $3); }
+    | ANALYZE fullname
+        { $$ = G_C.analyze($2); }
     | ALTER TABLE fullname RENAME TO nm
     | ALTER TABLE add_column_fullname ADD kwcolumn_opt column
     | create_vtab
@@ -119,7 +120,7 @@ savepoint_opt
     ;
 
 create_table
-    : createkw temp TABLE ifnotexists nm dbnm
+    : createkw temp TABLE ifnotexists fullname
     ;
 
 createkw
@@ -363,8 +364,8 @@ stl_prefix
     ;
 
 seltablist
-    : stl_prefix nm dbnm as indexed_opt on_opt using_opt
-    | stl_prefix nm dbnm LP exprlist RP as on_opt using_opt
+    : stl_prefix fullname as indexed_opt on_opt using_opt
+    | stl_prefix fullname LP exprlist RP as on_opt using_opt
     | stl_prefix LP select RP as on_opt using_opt
     | stl_prefix LP seltablist RP as on_opt using_opt
     ;
@@ -378,6 +379,7 @@ dbnm
 
 fullname
     : nm dbnm
+        { $$ = G.fullname($1, $2); }
     ;
 
 joinop
@@ -511,7 +513,7 @@ expr
     | expr in_op LP exprlist RP
     | LP select RP
     | expr in_op LP select RP
-    | expr in_op nm dbnm
+    | expr in_op fullname
     | EXISTS LP select RP
     | CASE case_operand case_exprlist case_else END
     | RAISE LP IGNORE RP
@@ -611,7 +613,7 @@ minus_num
     ;
 
 trigger_decl
-    : temp TRIGGER ifnotexists nm dbnm trigger_time trigger_event ON fullname foreach_clause when_clause
+    : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON fullname foreach_clause when_clause
     ;
 
 trigger_time
@@ -687,7 +689,7 @@ kwcolumn_opt
     ;
 
 create_vtab
-    : createkw VIRTUAL TABLE ifnotexists nm dbnm USING nm
+    : createkw VIRTUAL TABLE ifnotexists fullname USING nm
     ;
 
 vtabarglist

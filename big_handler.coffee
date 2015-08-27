@@ -48,7 +48,7 @@ module.exports = G =
             node: 'transtype'
             type: type
 
-    nm_dot_dbnm: (nm, dbnm)->
+    fullname: (nm, dbnm)->
         nm ?= null
         dbnm ?= null
         if !nm || !nm.value
@@ -111,16 +111,16 @@ module.exports = G =
                 type: 'rollback_savepoint'
                 trans_opt: trans_opt
                 nm: nm
-        reindex: (nm, dbnm)->
+        reindex: (fullname)->
             $$ =
                 node: 'cmd'
                 type: 'reindex'
-                nm_full: G.nm_dot_dbnm nm, dbnm
-        analyze: (nm, dbnm)->
+                fullname: fullname
+        analyze: (fullname)->
             $$ =
                 node: 'cmd'
                 type: 'analyze'
-                nm_full: G.nm_dot_dbnm nm, dbnm
+                fullname: fullname
 
     ########################################
     # The terminals with values
