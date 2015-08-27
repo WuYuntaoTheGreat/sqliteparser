@@ -76,10 +76,19 @@ module.exports = G =
             nm: nm
             dbnm: dbnm
             value: value
-    ifexists: (ifexists)->
+    ifexists: (value)->
         $$ =
             node: 'ifexists'
-            ifexists: ifexists
+            value: value
+    ifnotexists: (value)->
+        $$ =
+            node: 'ifnotexists'
+            value: value
+    temp: (value)->
+        $$ =
+            node: 'temp'
+            value: value
+
     column: (columnid, type, carglist)->
         $$ =
             node: 'column'
@@ -186,6 +195,13 @@ module.exports = G =
                 key: key
                 operator: operator
                 value: value
+        create_table: (temp, ifnotexists, fullname)>
+            $$ =
+                node: 'cmd'
+                type: 'create_table'
+                temp: temp
+                ifnotexists: ifnotexists
+                fullname: fullname
 
         reindex: (fullname)->
             $$ =
@@ -197,6 +213,19 @@ module.exports = G =
                 node: 'cmd'
                 type: 'analyze'
                 fullname: fullname
+
+        alter_add_column: (tablename, column)->
+            $$ =
+                node: 'cmd'
+                type: 'alter_add_column'
+                tablename: tablename
+                column: column
+        alter_rename: (tablename, newname)->
+            $$ =
+                node: 'cmd'
+                type: 'alter_rename'
+                tablename: tablename
+                newname: newname
 
     ########################################
     # The terminals with values

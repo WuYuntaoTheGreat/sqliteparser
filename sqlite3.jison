@@ -96,7 +96,9 @@ cmd
     | ANALYZE fullname
         { $$ = G_C.analyze($2); }
     | ALTER TABLE fullname RENAME TO nm
+        { $$ = G_C.alter_rename($3, $6); }
     | ALTER TABLE add_column_fullname ADD kwcolumn_opt column
+        { $$ = G_C.alter_add_column($3, $6); }
     | create_vtab
     | create_vtab LP vtabarglist RP
     ;
@@ -128,6 +130,7 @@ savepoint_opt
 
 create_table
     : createkw temp TABLE ifnotexists fullname
+        { $$ = G_C.create_table($2, $4, $5); }
     ;
 
 createkw
@@ -136,12 +139,16 @@ createkw
 
 ifnotexists
     :
+        { $$ = G.ifnotexists(false); }
     | IF NOT EXISTS
+        { $$ = G.ifnotexists(true); }
     ;
 
 temp
     :
+        { $$ = G.temp(false); }
     | TEMP
+        { $$ = G.temp(true); }
     ;
 
 create_table_args
@@ -220,7 +227,7 @@ carglist
     :
         { $$ = []; }
     | carglist ccons
-        { $1.push($2); }
+        { $1.push($2); /* TODO: ccons not implemented! */ }
     ;
 
 ccons
@@ -724,6 +731,7 @@ database_kw_opt
 
 add_column_fullname
     : fullname
+        { $$ = $1; }
     ;
 
 kwcolumn_opt
