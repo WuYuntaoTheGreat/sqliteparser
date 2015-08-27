@@ -747,11 +747,7 @@ vtabarg
 
 vtabargtoken
     : ANY
-    | lp anylist RP
-    ;
-
-lp
-    : LP
+    | LP anylist RP
     ;
 
 anylist
