@@ -113,6 +113,103 @@ module.exports = G =
             node: 'term'
             subnode: subnode
             value: value
+    autoinc: (value)->
+        $$ =
+            node: 'autoinc'
+            value: value
+
+    idx_item: (nm, collate, sortorder)->
+        $$ =
+            node: 'idx_item'
+            nm: nm
+            collate: collate
+            sortorder: sortorder
+    collate: (subnode)->
+        subnode ?= null
+        value = if subnode then subnode.value else null
+        $$ =
+            node: 'collate'
+            subnode: subnode
+            value: value
+    sortorder: (value)->
+        value ?= null
+        $$ =
+            node: 'sortorder'
+            value: value
+    onconf: (resolvetype)->
+        resolvetype ?= null
+        $$ =
+            node: 'onconf'
+            resolvetype: resolvetype
+    orconf: (resolvetype)->
+        resolvetype ?= null
+        $$ =
+            node: 'orconf'
+            resolvetype: resolvetype
+    raisetype: (value)->
+        $$ =
+            node: 'raisetype'
+            value: value
+    resolvetype: (value)->
+        $$ =
+            node: 'resolvetype'
+            value: value
+    refarg_match: (nm)->
+        $$ =
+            node: 'refarg'
+            type: 'match'
+            nm: nm
+    refargs: (event, act)->
+        $$ =
+            node: 'refarg'
+            type: 'on'
+            event: event
+            act: act
+    defer_subclause: (no_defer, init_opt)->
+        $$ =
+            node: 'defer_subclause'
+            no_defer: no_defer
+            init_opt: init_opt
+
+
+    ########################################
+    # tcons, Table Creation Options
+    ########################################
+    tcons:
+        constraint: (nm)->
+            $$ =
+                node: 'tcons'
+                type: 'constraint'
+                nm: nm
+        primary_key: (idxlist, autoinc, onconf)->
+            $$ =
+                node: 'tcons'
+                type: 'primary_key'
+                idxlist: idxlist
+                autoinc: autoinc
+                onconf: onconf
+        unique: (idxlist, onconf)->
+            $$ =
+                node: 'tcons'
+                type: 'unique'
+                idxlist: idxlist
+                onconf: onconf
+        check: (expr, onconf)->
+            $$ =
+                node: 'tcons'
+                type: 'check'
+                expr: expr
+                onconf: onconf
+        foreign_key: (idxlist, foreign_table, \
+                      foreign_idxlist, refargs, defer_subclause)->
+            $$ =
+                node: 'tcons'
+                type: 'foreign_key'
+                idxlist: idxlist
+                foreign_table: foreign_table
+                foreign_idxlist: foreign_idxlist
+                refargs: refargs
+                defer_subclause: defer_subclause
 
 
     ########################################

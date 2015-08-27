@@ -128,6 +128,7 @@ transtype
 savepoint_opt
     :
     | SAVEPOINT
+        { /* Ignored */ }
     ;
 
 create_table
@@ -137,6 +138,7 @@ create_table
 
 createkw
     : CREATE
+        { /* Ignored */ }
     ;
 
 ifnotexists
@@ -253,82 +255,118 @@ ccons
 
 autoinc
     :
+        { $$ = G.autoinc(false); }
     | AUTOINCR
+        { $$ = G.autoinc(true); }
     ;
 
 refargs
     :
+        { $$ = []; }
     | refargs refarg
+        { $1.push($2); }
     ;
 
 refarg
     : MATCH nm
+        { $$ = G.refarg_match($2); }
     | ON INSERT refact
+        { $$ = G.refarg($2, $3); }
     | ON DELETE refact
+        { $$ = G.refarg($2, $3); }
     | ON UPDATE refact
+        { $$ = G.refarg($2, $3); }
     ;
 
 refact
     : SET NULL
+        { $$ = $1 + ' ' + $2; }
     | SET DEFAULT
+        { $$ = $1 + ' ' + $2; }
     | CASCADE
+        { $$ = $1; }
     | RESTRICT
+        { $$ = $1; }
     | NO ACTION
+        { $$ = $1 + ' ' + $2; }
     ;
 
 defer_subclause
     : NOT DEFERRABLE init_deferred_pred_opt
+        { $$ = G.defer_subclause(true, $3); }
     | DEFERRABLE init_deferred_pred_opt
+        { $$ = G.defer_subclause(false, $2); }
     ;
 
 init_deferred_pred_opt
     :
+        { $$ = null; }
     | INITIALLY DEFERRED
+        { $$ = $1 + ' ' + $2; }
     | INITIALLY IMMEDIATE
+        { $$ = $1 + ' ' + $2; }
     ;
 
 conslist_opt
     :
+        { $$ = []; }
     | COMMA conslist
+        { $$ = $2; }
     ;
 
 conslist
     : conslist tconscomma tcons
+        { $1.push($3); }
     | tcons
+        { $$ = [ $1 ]; } 
     ;
 
 tconscomma
     :
     | COMMA
+        { /* Ignored */ }
     ;
 
 tcons
     : CONSTRAINT nm
+        { $$ = G.tcons.constraint($2); }
     | PRIMARY KEY LP idxlist autoinc RP onconf
+        { $$ = G.tcons.primary_key($4, $5, $7); }
     | UNIQUE LP idxlist RP onconf
+        { $$ = G.tcons.unique($3, $5); }
     | CHECK LP expr RP onconf
-    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt
-    ;
+        { $$ = G.tcons.check($3, $5); }
+    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt {
+    /*1       2   3  4       5  6          7  8           9       10 */
+          $$ = G.tcons.foreign_key($4, $7, $8, $9, $10);  }
 
 defer_subclause_opt
     :
+        { $$ = null; }
     | defer_subclause
+        { $$ = $1; }
     ;
 
 onconf
     :
+        { $$ = G.onconf(); }
     | ON CONFLICT resolvetype
+        { $$ = G.onconf($3); }
     ;
 
 orconf
     :
     | OR resolvetype
+        { $$ = G.orconf($2); }
     ;
 
 resolvetype
     : raisetype
+        { $$ = G.resolvetype($1.value); }
     | IGNORE
+        { $$ = G.resolvetype($1); }
     | REPLACE
+        { $$ = G.resolvetype($1); }
     ;
 
 ifexists
@@ -453,8 +491,11 @@ sortlist
 
 sortorder
     :
+        { $$ = G.sortorder(); }
     | ASC
+        { $$ = G.sortorder($1); }
     | DESC
+        { $$ = G.sortorder($1); }
     ;
 
 groupby_opt
@@ -619,18 +660,25 @@ uniqueflag
 
 idxlist_opt
     :
+        { $$ = []; }
     | LP idxlist RP
+        { $$ = $2; }
     ;
 
 idxlist
-    : idxlist COMMA nm collate sortorder
-    | nm collate sortorder
+    : nm collate sortorder
+        { $$ = [ G.idx_item($1, $2, $3) ]; }
+    | idxlist COMMA nm collate sortorder
+        { $1.push(G.idx_item($3, $4, $5)); }
     ;
 
 collate
     :
+        { $$ = collate(); }
     | COLLATE ID
+        { $$ = collate($2); }
     | COLLATE STRING
+        { $$ = collate($2); }
     ;
 
 nmnum
@@ -717,8 +765,11 @@ trigger_cmd
 
 raisetype
     : ROLLBACK
+        { $$ = G.raisetype($1); }
     | ABORT
+        { $$ = G.raisetype($1); }
     | FAIL
+        { $$ = G.raisetype($1); }
     ;
 
 key_opt
