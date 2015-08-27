@@ -106,10 +106,12 @@ module.exports = G =
     ########################################
     terminal:
         id: (value)->
+            if value.match /^['`\[]/
+                value = ssubstring value, 1, -1
             $$ =
                 node: 'ID'
                 raw: value
-                value: ssubstring value, 1, -1
+                value: value
         string: (value)->
             $$ =
                 node: 'STRING'
