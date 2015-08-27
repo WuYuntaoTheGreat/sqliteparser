@@ -19,12 +19,12 @@ module.exports =
     ecmd: (explain, cmd)->
         explain ?= null
         cmd ?= null
-        $ =
+        $$ =
             node: 'ecmd'
             explain: explain
             cmd: cmd
     explain: (explain, queryPlan)->
-        $ =
+        $$ =
             node: 'explain'
             explain: explain
             queryPlan: queryPlan
@@ -32,7 +32,7 @@ module.exports =
     nm: (raw, type, terminal)->
         terminal ?= null
         value = if terminal then terminal.value else null
-        $ =
+        $$ =
             node: 'nm'
             raw: raw
             type: type
@@ -40,19 +40,19 @@ module.exports =
             terminal: terminal
 
     dbnm: (nm)->
-        $ =
+        $$ =
             node: 'dbnm'
             nm: nm
 
     trans_opt: (nm)->
         nm ?= null
-        $ =
+        $$ =
             node: 'trans_opt'
             value: nm
 
     transtype: (type)->
         type ?= null
-        $ =
+        $$ =
             node: 'transtype'
             type: type
 
@@ -62,27 +62,27 @@ module.exports =
     cmd:
         vacuum: (nm)->
             nm ?= null
-            $ =
+            $$ =
                 node: 'cmd'
                 type: 'vacuum'
                 nm: nm
         begin_trans: (transtype, trans_opt)->
-            $ =
+            $$ =
                 node: 'begin_trans'
                 transtype: transtype
                 trans_opt: trans_opt
         commit_trans: (trans_opt)->
-            $ =
+            $$ =
                 node: 'commit_trans'
                 trans_opt: trans_opt
         end_trans: (trans_opt)->
-            $ =
+            $$ =
                 node: 'end_trans'
                 trans_opt: trans_opt
         reindex: (nm, dbnm)->
             nm ?= null
             dbnm ?= null
-            $ =
+            $$ =
                 node: 'reindex'
                 nm: nm
                 dbnm: dbnm
@@ -93,39 +93,46 @@ module.exports =
     ########################################
     terminal:
         id: (value)->
-            $ =
+            $$ =
                 node: 'ID'
                 raw: value
                 value: ssubstring value, 1, -1
         string: (value)->
-            $ =
+            $$ =
                 node: 'STRING'
                 value: ssubstring value, 1, -1
         integer: (value)->
-            $ =
+            $$ =
                 node: 'INTEGER'
                 raw: value
                 value: parseInt value
         float: (value)->
-            $ =
+            $$ =
                 node: 'FLOAT'
                 raw: value
                 value: parseFloat value
         variable: (value)->
-            $ =
+            $$ =
                 node: 'VARIABLE'
                 raw: value
                 position: parseInt ssubstring value, 1, 0
         blob: (value)->
-            $ =
+            $$ =
                 node: 'BLOB'
                 raw: value
                 value: ssubstring value, 2, -1
         join_kw: (value)->
-            $ =
+            $$ =
                 node: 'JOIN_KW'
                 type: value
+        like_kw: (value)->
+            $$ =
+                node: 'LIKE_KW'
+                type: value
+        ctime_kw: (value)->
+            $$ =
+                node: 'CTIME_KW'
+                type: value
 
-                    
 
 
