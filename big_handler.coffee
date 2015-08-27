@@ -1,4 +1,4 @@
-# vim: set nu ai et ts=4 sw=4:
+# vim: set nu ai et ts=4 sw=4 cc=80:
 #
 
 ssubstring = (str, start, end)->
@@ -195,7 +195,7 @@ module.exports = G =
             node: 'distinct'
             value: value
 
-    create_table: (temp, ifnotexists, fullname)>
+    create_table: (temp, ifnotexists, fullname)->
         $$ =
             node: 'create_table'
             temp: temp
@@ -217,6 +217,10 @@ module.exports = G =
             nm: nm
             idxlist: idxlist
             select: select
+    uniqueflag: (value)->
+        $$ =
+            node: 'uniqueflag'
+            value: value
 
     ########################################
     # tcons, Table Creation Options
