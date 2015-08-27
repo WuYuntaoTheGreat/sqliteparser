@@ -1,13 +1,5 @@
 # vim: set nu ai et ts=4 sw=4:
 #
-full_nm_name = (nm, dbnm)->
-    if !nm || !nm.value
-        result = null
-    else if dbnm && dbnm.nm && dbnm.nm.value
-        result = nm.value + "." + dbnm.nm.value
-    else
-        result = nm.value
-    result
 
 ssubstring = (str, start, end)->
     if end > 0
@@ -15,7 +7,7 @@ ssubstring = (str, start, end)->
     else
         str.substring start, str.length + end
 
-module.exports =
+module.exports = G =
     ecmd: (explain, cmd)->
         explain ?= null
         cmd ?= null
@@ -56,6 +48,22 @@ module.exports =
             node: 'transtype'
             type: type
 
+    nm_dot_dbnm: (nm, dbnm)->
+        nm ?= null
+        dbnm ?= null
+        if !nm || !nm.value
+            value = null
+        else if dbnm && dbnm.nm && dbnm.nm.value
+            value = nm.value + "." + dbnm.nm.value
+        else
+            value = nm.value
+        $$ =
+            node: "nm_full"
+            nm: nm
+            dbnm: dbnm
+            value: value
+
+
     ########################################
     # The commands
     ########################################
@@ -68,25 +76,30 @@ module.exports =
                 nm: nm
         begin_trans: (transtype, trans_opt)->
             $$ =
-                node: 'begin_trans'
+                node: 'cmd'
+                type: 'begin_trans'
                 transtype: transtype
                 trans_opt: trans_opt
         commit_trans: (trans_opt)->
             $$ =
-                node: 'commit_trans'
+                node: 'cmd'
+                type: 'commit_trans'
                 trans_opt: trans_opt
         end_trans: (trans_opt)->
             $$ =
-                node: 'end_trans'
+                node: 'cmd'
+                type: 'end_trans'
                 trans_opt: trans_opt
         reindex: (nm, dbnm)->
-            nm ?= null
-            dbnm ?= null
             $$ =
-                node: 'reindex'
-                nm: nm
-                dbnm: dbnm
-                nm_full: full_nm_name nm, dbnm
+                node: 'cmd'
+                type: 'reindex'
+                nm_full: G.nm_dot_dbnm nm, dbnm
+        analyze: (nm, dbnm)->
+            $$ =
+                node: 'cmd'
+                type: 'analyze'
+                nm_full: G.nm_dot_dbnm nm, dbnm
 
     ########################################
     # The terminals with values

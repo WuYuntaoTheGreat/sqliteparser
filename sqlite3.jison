@@ -80,7 +80,9 @@ cmd
     | REINDEX nm dbnm
         { $$ = BIG_C.reindex($2, $3); }
     | ANALYZE
+        { $$ = BIG_C.analyze(); }
     | ANALYZE nm dbnm
+        { $$ = BIG_C.analyze($2, $3); }
     | ALTER TABLE fullname RENAME TO nm
     | ALTER TABLE add_column_fullname ADD kwcolumn_opt column
     | create_vtab
