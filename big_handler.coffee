@@ -226,6 +226,15 @@ module.exports = G =
                 type: 'alter_rename'
                 tablename: tablename
                 newname: newname
+        create_vtab: (ifnotexists, fullname, module_name)->
+            $$ =
+                node: 'cmd'
+                type: 'create_vtab'
+                ifnotexists: ifnotexists
+                fullname: fullname
+                module_name: module_name
+                arglist: []
+
 
     ########################################
     # The terminals with values
