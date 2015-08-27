@@ -90,6 +90,27 @@ module.exports = G =
                 node: 'cmd'
                 type: 'end_trans'
                 trans_opt: trans_opt
+        rollback_trans: (trans_opt)->
+            $$ =
+                node: 'cmd'
+                type: 'rollback_trans'
+                trans_opt: trans_opt
+        savepoint: (nm)->
+            $$ =
+                node: 'cmd'
+                type: 'savepoint'
+                nm: nm
+        release_savepoint: (nm)->
+            $$ =
+                node: 'cmd'
+                type: 'release_savepoint'
+                nm: nm
+        rollback_savepoint: (trans_opt, nm)->
+            $$ =
+                node: 'cmd'
+                type: 'rollback_savepoint'
+                trans_opt: trans_opt
+                nm: nm
         reindex: (nm, dbnm)->
             $$ =
                 node: 'cmd'

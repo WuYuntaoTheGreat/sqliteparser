@@ -1,9 +1,9 @@
 /* vim: set nu ai et ts=4 sw=4 ft=yacc : */
 %{
 require("coffee-script/register");
-var BIG = require("../big_handler");
-var BIG_T = BIG.terminal;
-var BIG_C = BIG.cmd;
+var G = require("../big_handler");
+var G_T = G.terminal;
+var G_C = G.cmd;
 
 %}
 
@@ -26,31 +26,35 @@ cmdlist
 
 ecmd
     : SEMI
-        { $$ = BIG.ecmd(); }
+        { $$ = G.ecmd(); }
     | explain cmd SEMI
-        { $$ = BIG.ecmd($1, $2); }
+        { $$ = G.ecmd($1, $2); }
     ;
 
 explain
     :
-        { $$ = BIG.explain(false, false); }
+        { $$ = G.explain(false, false); }
     | EXPLAIN
-        { $$ = BIG.explain(true, false); }
+        { $$ = G.explain(true, false); }
     | EXPLAIN QUERY PLAN
-        { $$ = BIG.explain(true, true); }
+        { $$ = G.explain(true, true); }
     ;
 
 cmd
     : BEGIN transtype trans_opt
-        { $$ = BIG_C.begin_trans($2, $3); }
+        { $$ = G_C.begin_trans($2, $3); }
     | COMMIT trans_opt
-        { $$ = BIG_C.commit_trans($2); }
+        { $$ = G_C.commit_trans($2); }
     | END trans_opt
-        { $$ = BIG_C.end_trans($2); }
+        { $$ = G_C.end_trans($2); }
     | ROLLBACK trans_opt
+        { $$ = G_C.rollback_trans($2); }
     | SAVEPOINT nm
+        { $$ = G_C.savepoint($2); }
     | RELEASE savepoint_opt nm
+        { $$ = G_C.release_savepoint($3); }
     | ROLLBACK trans_opt TO savepoint_opt nm
+        { $$ = G_C.rollback_savepoint($2, $5); }
     | create_table create_table_args
     | DROP TABLE ifexists fullname
     | createkw temp VIEW ifnotexists nm dbnm AS select
@@ -63,9 +67,9 @@ cmd
     | createkw uniqueflag INDEX ifnotexists nm dbnm ON nm LP idxlist RP where_opt
     | DROP INDEX ifexists fullname
     | VACUUM
-        { $$ = BIG_C.vacuum(); }
+        { $$ = G_C.vacuum(); }
     | VACUUM nm
-        { $$ = BIG_C.vacuum($2); }
+        { $$ = G_C.vacuum($2); }
     | PRAGMA nm dbnm
     | PRAGMA nm dbnm EQ nmnum
     | PRAGMA nm dbnm LP nmnum RP
@@ -76,13 +80,13 @@ cmd
     | ATTACH database_kw_opt expr AS expr key_opt
     | DETACH database_kw_opt expr
     | REINDEX
-        { $$ = BIG_C.reindex(); }
+        { $$ = G_C.reindex(); }
     | REINDEX nm dbnm
-        { $$ = BIG_C.reindex($2, $3); }
+        { $$ = G_C.reindex($2, $3); }
     | ANALYZE
-        { $$ = BIG_C.analyze(); }
+        { $$ = G_C.analyze(); }
     | ANALYZE nm dbnm
-        { $$ = BIG_C.analyze($2, $3); }
+        { $$ = G_C.analyze($2, $3); }
     | ALTER TABLE fullname RENAME TO nm
     | ALTER TABLE add_column_fullname ADD kwcolumn_opt column
     | create_vtab
@@ -91,22 +95,22 @@ cmd
 
 trans_opt
     :
-        { $$ = BIG.trans_opt(); }
+        { $$ = G.trans_opt(); }
     | TRANSACTION
-        { $$ = BIG.trans_opt(); }
+        { $$ = G.trans_opt(); }
     | TRANSACTION nm
-        { $$ = BIG.trans_opt($2); }
+        { $$ = G.trans_opt($2); }
     ;
 
 transtype
     :
-        { $$ = BIG.transtype(); }
+        { $$ = G.transtype(); }
     | DEFERRED
-        { $$ = BIG.transtype($1); }
+        { $$ = G.transtype($1); }
     | IMMEDIATE
-        { $$ = BIG.transtype($1); }
+        { $$ = G.transtype($1); }
     | EXCLUSIVE
-        { $$ = BIG.transtype($1); }
+        { $$ = G.transtype($1); }
     ;
 
 savepoint_opt
@@ -157,13 +161,13 @@ columnid
 
 nm
     : ID
-        { $$ = BIG.nm($1, 'ID', BIG_T.id(yytext)); 
+        { $$ = G.nm($1, 'ID', G_T.id(yytext)); 
     /* | INDEXED
-        { $$ = BIG.nm($1, 'INDEXED'); } */ /* I think this is wrong */}
+        { $$ = G.nm($1, 'INDEXED'); } */ /* I think this is wrong */}
     | STRING
-        { $$ = BIG.nm($1, 'STRING', BIG_T.string(yytext)); }
+        { $$ = G.nm($1, 'STRING', G_T.string(yytext)); }
     | JOIN_KW
-        { $$ = BIG.nm($1, 'JOIN_KW', Big.terminal.join_kw(yytext)); }
+        { $$ = G.nm($1, 'JOIN_KW', G_T.join_kw(yytext)); }
     ;
 
 type
@@ -367,9 +371,9 @@ seltablist
 
 dbnm
     :
-        { $$ = BIG.dbnm(); }
+        { $$ = G.dbnm(); }
     | DOT nm
-        { $$ = BIG.dbnm($2); }
+        { $$ = G.dbnm($2); }
     ;
 
 fullname
