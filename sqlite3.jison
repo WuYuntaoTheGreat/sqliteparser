@@ -58,7 +58,7 @@ cmd
         { $$ = G_C.create_table($1, $2); }
     | DROP TABLE ifexists fullname
         { $$ = G_C.drop_table($3, $4); }
-    | createkw temp VIEW ifnotexists fullname AS select
+    | CREATE temp VIEW ifnotexists fullname AS select
     | DROP VIEW ifexists fullname
         { $$ = G_C.drop_view($3, $4); }
     | select
@@ -66,7 +66,7 @@ cmd
     | with UPDATE orconf fullname indexed_opt SET setlist where_opt
     | with insert_cmd INTO fullname inscollist_opt select
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
-    | createkw uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
+    | CREATE uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
     | DROP INDEX ifexists fullname
         { $$ = G_C.drop_index($3, $3); }
     | VACUUM
@@ -83,7 +83,7 @@ cmd
         { $$ = G_C.pragma($2, "=", $4); }
     | PRAGMA fullname LP minus_num RP
         { $$ = G_C.pragma($2, "()", $4); }
-    | createkw trigger_decl BEGIN trigger_cmd_list END
+    | CREATE trigger_decl BEGIN trigger_cmd_list END
     | DROP TRIGGER ifexists fullname
         { $$ = G_C.drop_trigger($3, $4); }
     | ATTACH database_kw_opt expr AS expr key_opt
@@ -129,17 +129,11 @@ transtype
 savepoint_opt
     :
     | SAVEPOINT
-        { /* Ignored */ }
     ;
 
 create_table
-    : createkw temp TABLE ifnotexists fullname
+    : CREATE temp TABLE ifnotexists fullname
         { $$ = G.create_table($2, $4, $5); }
-    ;
-
-createkw
-    : CREATE
-        { /* Ignored */ }
     ;
 
 ifnotexists
@@ -329,7 +323,6 @@ conslist
 tconscomma
     :
     | COMMA
-        { /* Ignored */ }
     ;
 
 tcons
@@ -344,6 +337,7 @@ tcons
     | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt {
     /*1       2   3  4       5  6          7  8           9       10 */
           $$ = G.tcons.foreign_key($4, $7, $8, $9, $10);  }
+    ;
 
 defer_subclause_opt
     :
@@ -664,7 +658,9 @@ nexprlist
 
 uniqueflag
     :
+        { $$ = G.uniqueflag(false); }
     | UNIQUE
+        { $$ = G.uniqueflag(true); }
     ;
 
 idxlist_opt
@@ -802,7 +798,7 @@ kwcolumn_opt
     ;
 
 create_vtab
-    : createkw VIRTUAL TABLE ifnotexists fullname USING nm
+    : CREATE VIRTUAL TABLE ifnotexists fullname USING nm
         { $$ = G_C.create_vtab($4, $5, $7); }
     ;
 
@@ -821,7 +817,7 @@ vtabarg
             can take zero or more comma-separated
             arguments. The arguments can be just about
             ANY text as long as it has balanced
-            parentheses. For example: 
+            parentheses. For example:
 
             CREATE VIRTUAL TABLE IF NOT EXISTS \
                 tablename USING module ( arg, arg ... );
@@ -851,7 +847,7 @@ anylist
 
 with
     :
-        { $$ = null }
+        { $$ = null; }
     | WITH wqlist
         { $$ = G.with(false, $2); }
     | WITH RECURSIVE wqlist
