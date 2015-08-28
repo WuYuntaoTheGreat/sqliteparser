@@ -75,8 +75,8 @@ cmd
         { $$ = G_C.insert($2, $4, $5, $6); }
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
         { $$ = G_C.insert($2, $4, $5, [ $6, $7 ]); }
-    | CREATE uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
-             2                4           5           7     9          11
+    | CREATE uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP \
+      where_opt
         { $$ = G_C.create_index($2, $4, $5, $7, $9, $11); }
     | DROP INDEX ifexists fullname
         { $$ = G_C.drop_index($3, $3); }
@@ -198,9 +198,19 @@ columnid
 
 nm
     : ID
-        { $$ = G.nm($1, "ID");
-    /* | INDEXED
-        { $$ = G.nm($1, "INDEXED"); } */ /* I think this is wrong */ }
+        { $$ = G.nm($1, "ID"); /* } 
+            #========================================
+            FIXME: This must be wrong. Either the 
+            parsing of terminal "INDEXED" is wrong,
+            or the use of yacc file of this terminal
+            is wrong.  The yacc file is probably 
+            right, because "INDEX" appeared more than
+            once. Maybe the terminal "INDEXED" means
+            member of array member with index, like:
+                ABC[1]
+            #========================================
+    | INDEXED
+        { $$ = G.nm($1, "INDEXED"); } */ }
     | STRING
         { $$ = G.nm($1, "STRING"); }
     | JOIN_KW
@@ -366,7 +376,8 @@ tcons
         { $$ = [ $1, $2, $3, $4, $5 ]; }
     | CHECK LP expr RP onconf
         { $$ = [ $1, $2, $3, $4, $5 ]; }
-    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt 
+    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs \
+      defer_subclause_opt 
         { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
     ;
 
@@ -431,7 +442,8 @@ multiselect_op
     ;
 
 oneselect
-    : SELECT distinct selcollist from where_opt groupby_opt having_opt orderby_opt limit_opt
+    : SELECT distinct selcollist from where_opt groupby_opt having_opt \
+      orderby_opt limit_opt
         { $$ = G.oneselect([$2, $3, $4, $5, $6, $7, $8]); }
     | values
         { $$ = G.oneselect_values($1); }
@@ -649,8 +661,8 @@ expr
     | expr COLLATE STRING               { $$ = G.expr([ $1, $2, $3 ]); }
     | CAST LP expr AS typetoken RP
         { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
-    | ID LP distinct exprlist RP        { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
-    | INDEXED LP distinct exprlist RP   { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | ID LP distinct exprlist RP        { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | INDEXED LP distinct exprlist RP   { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
     | ID LP STAR RP                     { $$ = G.expr([ $1, $2, $3, $4 ]); }
     | INDEXED LP STAR RP                { $$ = G.expr([ $1, $2, $3, $4 ]); }
     | expr AND expr                     { $$ = G.expr([ $1, $2, $3 ]); }
@@ -672,7 +684,7 @@ expr
     | expr REM expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
     | expr CONCAT expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
     | expr likeop expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr likeop expr ESCAPE expr 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr likeop expr ESCAPE expr 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
     | expr ISNULL 		                { $$ = G.expr([ $1, $2 ]); }
     | expr NOTNULL 		                { $$ = G.expr([ $1, $2 ]); }
     | expr NOT NULL 	                { $$ = G.expr([ $1, $2, $3 ]); }
@@ -682,10 +694,10 @@ expr
     | BITNOT expr 		                { $$ = G.expr([ $1, $2 ]); }
     | MINUS expr 		                { $$ = G.expr([ $1, $2 ]); }
     | PLUS expr 		                { $$ = G.expr([ $1, $2 ]); }
-    | expr between_op expr AND expr 	{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
-    | expr in_op LP exprlist RP 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr between_op expr AND expr 	{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr in_op LP exprlist RP 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
     | LP select RP 		                { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr in_op LP select RP 		    { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr in_op LP select RP 		    { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
     | expr in_op fullname 		        { $$ = G.expr([ $1, $2, $3 ]); }
     | EXISTS LP select RP 		        { $$ = G.expr([ $1, $2, $3, $4 ]); }
     | CASE case_operand case_exprlist case_else END
@@ -832,7 +844,8 @@ minus_num
     ;
 
 trigger_decl
-    : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON fullname foreach_clause when_clause
+    : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON \
+      fullname foreach_clause when_clause
         { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
     ;
 
@@ -969,6 +982,7 @@ vtabarg
             key word of lemon parser, but it's surely
             not work in Jison. I need to figure out how
             to implement this.
+            # ========================================
 
     | vtabarg vtabargtoken
         { $1.push($2); }
@@ -983,7 +997,6 @@ anylist
     :
     | anylist LP anylist RP
     | anylist ANY
-            # ========================================
         {*/}
     ;
 
