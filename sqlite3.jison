@@ -442,37 +442,54 @@ distinct
 
 sclp
     :
+        { $$ = null; }
     | selcollist COMMA
+        { $$ = $1; }
     ;
 
 selcollist
     : sclp expr as
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3 ]); }
     | sclp STAR
+        { $$ = null != $1 ? $1 : []; $$.push([ $2 ]); }
     | sclp nm DOT STAR
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4 ]); }
     ;
 
 as
     :
+        { $$ = []; }
     | AS nm
+        { $$ = [ $1, $2 ]; }
     | ID
+        { $$ = [ $1 ]; }
     | STRING
+        { $$ = [ $1 ]; }
     ;
 
 from
     :
+        { $$ = []; }
     | FROM seltablist
+        { $$ = [ $1, $2 ]; }
     ;
 
 stl_prefix
     :
+        { $$ = null; }
     | seltablist joinop
+        { $$ = $1.concat($2); }
     ;
 
 seltablist
     : stl_prefix fullname as indexed_opt on_opt using_opt
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6 ]); }
     | stl_prefix fullname LP exprlist RP as on_opt using_opt
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6, $7, $8 ]); }
     | stl_prefix LP select RP as on_opt using_opt
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6, $7 ]); }
     | stl_prefix LP seltablist RP as on_opt using_opt
+        { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6, $7 ]); }
     ;
 
 dbnm
@@ -484,7 +501,7 @@ dbnm
 
 fullname
     : nm dbnm
-        { $$ = $2 != null ? [ $1, '.', $2 ] : [ $1 ]; }
+        { $$ = $2 != null ? [ $1, 'DOT', $2 ] : [ $1 ]; }
     ;
 
 joinop
@@ -502,28 +519,39 @@ joinop
 
 on_opt
     :
+        { $$ = []; }
     | ON expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 indexed_opt
     :
+        { $$ = []; }
     | INDEXED BY nm
+        { $$ = [ $1, $2, $3 ]; }
     | NOT INDEXED
+        { $$ = [ $1, $2 ]; }
     ;
 
 using_opt
     :
+        { $$ = []; }
     | USING LP idlist RP
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 orderby_opt
     :
+        { $$ = []; }
     | ORDER BY sortlist
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 sortlist
     : sortlist COMMA expr sortorder
+        { $1.append([ $1, $2 ]); }
     | expr sortorder
+        { $$ = [ [ $1, $2 ] ]; }
     ;
 
 sortorder
@@ -569,24 +597,30 @@ where_opt
 
 setlist
     : setlist COMMA nm EQ expr
-        { $1.push([ $1, $2, $3 ]); }
+        { $1.push([ $3, $4, $5 ]); }
     | nm EQ expr
         { $$ = [ [ $1, $2, $3 ] ]; }
     ;
 
 insert_cmd
     : INSERT orconf
+        { $$ = [ $1, $2 ]; }
     | REPLACE
+        { $$ = [ $1 ]; }
     ;
 
 inscollist_opt
     :
+        { $$ = []; }
     | LP idlist RP
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 idlist
     : idlist COMMA nm
+        { $1.push($3); }
     | nm
+        { $$ = [ $1 ]; }
     ;
 
 expr
@@ -662,34 +696,48 @@ term
 
 likeop
     : LIKE_KW
+        { $$ = [ $1 ]; }
     | MATCH
+        { $$ = [ $1 ]; }
     | NOT LIKE_KW
+        { $$ = [ $1, $2 ]; }
     | NOT MATCH
+        { $$ = [ $1, $2 ]; }
     ;
 
 between_op
     : BETWEEN
+        { $$ = [ $1 ]; }
     | NOT BETWEEN
+        { $$ = [ $1, $2 ]; }
     ;
 
 in_op
     : IN
+        { $$ = [ $1 ]; }
     | NOT IN
+        { $$ = [ $1, $2 ]; }
     ;
 
 case_exprlist
     : case_exprlist WHEN expr THEN expr
+        { $1.push([ $2, $3, $4, $5 ]); }
     | WHEN expr THEN expr
+        { $$ = [ [ $1, $2, $3, $4 ] ]; }
     ;
 
 case_else
     :
+        { $$ = []; }
     | ELSE expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 case_operand
     :
+        { $$ = null; }
     | expr
+        { $$ = $1; }
     ;
 
 exprlist
@@ -769,6 +817,7 @@ minus_num
 
 trigger_decl
     : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON fullname foreach_clause when_clause
+        { /* TODO: finish this one! */ }
     ;
 
 trigger_time
@@ -818,7 +867,7 @@ trnm
     : nm
         { $$ = [ $1 ]; }
     | nm DOT nm
-        { $$ = [ $1, '.', $3 ]; }
+        { $$ = [ $1, 'DOT', $3 ]; }
     ;
 
 tridxby
@@ -835,6 +884,7 @@ trigger_cmd
     | insert_cmd INTO trnm inscollist_opt select
     | DELETE FROM trnm tridxby where_opt
     | select
+        { /* TODO: finish this one! */ }
     ;
 
 raisetype
@@ -848,12 +898,15 @@ raisetype
 
 key_opt
     :
+        { $$ = []; }
     | KEY expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 database_kw_opt
     :
     | DATABASE
+        { /* Ignored */ }
     ;
 
 add_column_fullname
@@ -864,6 +917,7 @@ add_column_fullname
 kwcolumn_opt
     :
     | COLUMNKW
+        { /* Ignored */ }
     ;
 
 create_vtab
@@ -927,7 +981,7 @@ wqlist
     : nm idxlist_opt AS LP select RP
         { $$ = [ [ $1, $2, $3, $4, $5, $6 ] ]; }
     | wqlist COMMA nm idxlist_opt AS LP select RP
-        { $1.push([ $1, $2, $3, $4, $5, $6 ]); }
+        { $1.push([ $3, $4, $5, $6, $7, $8 ]); }
     ;
 
 

@@ -43,6 +43,7 @@ module.exports = G =
             columnid: columnid
             type: type
             carglist: carglist
+
     typetoken: (typename, param1, param2)->
         param1 ?= null
         param2 ?= null
