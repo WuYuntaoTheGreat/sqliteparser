@@ -104,46 +104,6 @@ module.exports = G =
             values: values
 
     ########################################
-    # tcons, Table Creation Options
-    ########################################
-    tcons:
-        constraint: (nm)->
-            $$ =
-                node: 'tcons'
-                type: 'constraint'
-                nm: nm
-        primary_key: (idxlist, autoinc, onconf)->
-            $$ =
-                node: 'tcons'
-                type: 'primary_key'
-                idxlist: idxlist
-                autoinc: autoinc
-                onconf: onconf
-        unique: (idxlist, onconf)->
-            $$ =
-                node: 'tcons'
-                type: 'unique'
-                idxlist: idxlist
-                onconf: onconf
-        check: (expr, onconf)->
-            $$ =
-                node: 'tcons'
-                type: 'check'
-                expr: expr
-                onconf: onconf
-        foreign_key: (idxlist, foreign_table, \
-                      foreign_idxlist, refargs, defer_subclause)->
-            $$ =
-                node: 'tcons'
-                type: 'foreign_key'
-                idxlist: idxlist
-                foreign_table: foreign_table
-                foreign_idxlist: foreign_idxlist
-                refargs: refargs
-                defer_subclause: defer_subclause
-
-
-    ########################################
     # The commands
     ########################################
     cmd:
@@ -202,6 +162,14 @@ module.exports = G =
                 type: 'drop_view'
                 ifexists: ifexists
                 fullname: fullname
+
+        select: (_select)->
+            $$ =
+                node: 'cmd'
+                type: 'select'
+                with: _select.with
+                selectnowith: _select.selectnowith
+
         drop_index: (ifexists, fullname)->
             $$ =
                 node: 'cmd'

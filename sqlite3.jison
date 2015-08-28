@@ -1,4 +1,7 @@
 /* vim: set nu ai et ts=4 sw=4 ft=yacc : */
+/*
+^\s*[:\|].*\n\s*[;\|]
+ */
 %{
 require("coffee-script/register");
 var G = require("../big_handler");
@@ -62,6 +65,7 @@ cmd
     | DROP VIEW ifexists fullname
         { $$ = G_C.drop_view($3, $4); }
     | select
+        { $$ = G_C.select($1); }
     | with DELETE FROM fullname indexed_opt where_opt
     | with UPDATE orconf fullname indexed_opt SET setlist where_opt
     | with insert_cmd INTO fullname inscollist_opt select
@@ -345,16 +349,15 @@ tconscomma
 
 tcons
     : CONSTRAINT nm
-        { $$ = G.tcons.constraint($2); }
+        { $$ = [ $1, $2 ]; }
     | PRIMARY KEY LP idxlist autoinc RP onconf
-        { $$ = G.tcons.primary_key($4, $5, $7); }
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7 ]; }
     | UNIQUE LP idxlist RP onconf
-        { $$ = G.tcons.unique($3, $5); }
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
     | CHECK LP expr RP onconf
-        { $$ = G.tcons.check($3, $5); }
-    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt {
-    /*1       2   3  4       5  6          7  8           9       10 */
-          $$ = G.tcons.foreign_key($4, $7, $8, $9, $10);  }
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
+    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs defer_subclause_opt 
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
     ;
 
 defer_subclause_opt
@@ -820,7 +823,7 @@ minus_num
 
 trigger_decl
     : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON fullname foreach_clause when_clause
-        { /* TODO: finish this one! */ }
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
     ;
 
 trigger_time
@@ -884,10 +887,13 @@ tridxby
 
 trigger_cmd
     : UPDATE orconf trnm tridxby SET setlist where_opt
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7 ]; }
     | insert_cmd INTO trnm inscollist_opt select
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
     | DELETE FROM trnm tridxby where_opt
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
     | select
-        { /* TODO: finish this one! */ }
+        { $$ = $1; }
     ;
 
 raisetype
