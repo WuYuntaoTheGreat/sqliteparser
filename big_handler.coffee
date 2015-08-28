@@ -156,6 +156,15 @@ module.exports = G =
                 type: 'drop_table'
                 ifexists: ifexists
                 fullname: fullname
+        create_view: (temp, ifnotexists, fullname, select)->
+            $$ =
+                node: 'cmd'
+                type: 'drop_table'
+                temp: temp
+                ifnotexists: ifnotexists
+                fullname: fullname
+                select: select
+
         drop_view: (ifexists, fullname)->
             $$ =
                 node: 'cmd'
@@ -169,6 +178,47 @@ module.exports = G =
                 type: 'select'
                 with: _select.with
                 selectnowith: _select.selectnowith
+
+        delete: (_with, fullname, indexed, where)->
+            $$ =
+                node: 'cmd'
+                type: 'delete'
+                with: _with
+                fullname: fullname
+                indexed: indexed
+                where: where
+
+        update: (_with, orconf, fullname, indexed, setlist, where)->
+            $$ =
+                node: 'cmd'
+                type: 'update'
+                with: _with
+                orconf: orconf
+                fullname: fullname
+                indexed: indexed
+                setlist: setlist
+                where: where
+
+        insert: (insert_cmd, fullname, inscollist, select)->
+            $$ =
+                node: 'cmd'
+                type: 'insert'
+                insert_cmd: insert_cmd
+                fullname: fullname
+                inscollist: inscollist
+                select: select
+
+        create_index: (uniqueflag, ifnotexists, fullname, on_what, \
+                idxlist, where_opt)->
+            $$ =
+                node: 'cmd'
+                type: 'create_index'
+                uniqueflag: uniqueflag
+                ifnotexists: ifnotexists
+                fullname: fullname
+                on_what: on_what
+                idxlist: idxlist
+                where_opt: where_opt
 
         drop_index: (ifexists, fullname)->
             $$ =
@@ -198,6 +248,27 @@ module.exports = G =
                 key: key
                 operator: operator
                 value: value
+
+        create_trigger: (trigger_decl, trigger_cmd_list)->
+            $$ =
+                node: 'cmd'
+                type: 'create_trigger'
+                trigger_decl: trigger_decl
+                trigger_cmd_list: trigger_cmd_list
+
+        attach: (expr, as_expr, key_opt)->
+            $$ =
+                node: 'cmd'
+                type: 'attach'
+                expr: expr
+                as_expr: as_expr
+                key_opt: key_opt
+
+        detach: (expr)->
+            $$ =
+                node: 'cmd'
+                type: 'detach'
+                expr: expr
 
         reindex: (fullname)->
             $$ =

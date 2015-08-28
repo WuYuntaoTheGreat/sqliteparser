@@ -62,15 +62,22 @@ cmd
     | DROP TABLE ifexists fullname
         { $$ = G_C.drop_table($3, $4); }
     | CREATE temp VIEW ifnotexists fullname AS select
+        { $$ = G_C.create_view($2, $4, $5, $7); }
     | DROP VIEW ifexists fullname
         { $$ = G_C.drop_view($3, $4); }
     | select
         { $$ = G_C.select($1); }
     | with DELETE FROM fullname indexed_opt where_opt
+        { $$ = G_C.delete($1, $4, $5, $6); }
     | with UPDATE orconf fullname indexed_opt SET setlist where_opt
+        { $$ = G_C.update($1, $3, $4, $5, $7, $8); }
     | with insert_cmd INTO fullname inscollist_opt select
+        { $$ = G_C.insert($2, $4, $5, $6); }
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
+        { $$ = G_C.insert($2, $4, $5, [ $6, $7 ]); }
     | CREATE uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP where_opt
+             2                4           5           7     9          11
+        { $$ = G_C.create_index($2, $4, $5, $7, $9, $11); }
     | DROP INDEX ifexists fullname
         { $$ = G_C.drop_index($3, $3); }
     | VACUUM
@@ -88,10 +95,13 @@ cmd
     | PRAGMA fullname LP minus_num RP
         { $$ = G_C.pragma($2, "()", $4); }
     | CREATE trigger_decl BEGIN trigger_cmd_list END
+        { $$ = G_C.create_trigger($2, $4); }
     | DROP TRIGGER ifexists fullname
         { $$ = G_C.drop_trigger($3, $4); }
     | ATTACH database_kw_opt expr AS expr key_opt
+        { $$ = G_C.attach($3, $5, $6); }
     | DETACH database_kw_opt expr
+        { $$ = G_C.detach($3); }
     | REINDEX
         { $$ = G_C.reindex(); }
     | REINDEX fullname
