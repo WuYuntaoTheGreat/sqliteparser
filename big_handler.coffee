@@ -1,26 +1,18 @@
 # vim: set nu ai et ts=4 sw=4 cc=80:
 #
-
+################################################################################
+# Utility functions.
+################################################################################
 ssubstring = (str, start, end)->
     if end > 0
         str.substring start, end
     else
         str.substring start, str.length + end
 
+################################################################################
+# The exports.
+################################################################################
 module.exports = G =
-    ecmd: (explain, cmd)->
-        explain ?= null
-        cmd ?= null
-        $$ =
-            node: 'ecmd'
-            explain: explain
-            cmd: cmd
-    explain: (explain, queryPlan)->
-        $$ =
-            node: 'explain'
-            explain: explain
-            queryPlan: queryPlan
-
     nm: (subnode, type)->
         switch type
             when 'ID'       then value = subnode.value
@@ -50,18 +42,6 @@ module.exports = G =
             subnode: subnode
             value: value
 
-    trans_opt: (nm)->
-        nm ?= null
-        $$ =
-            node: 'trans_opt'
-            value: nm
-
-    transtype: (type)->
-        type ?= null
-        $$ =
-            node: 'transtype'
-            type: type
-
     fullname: (nm, dbnm)->
         nm ?= null
         dbnm ?= null
@@ -75,18 +55,6 @@ module.exports = G =
             node: "nm_full"
             nm: nm
             dbnm: dbnm
-            value: value
-    ifexists: (value)->
-        $$ =
-            node: 'ifexists'
-            value: value
-    ifnotexists: (value)->
-        $$ =
-            node: 'ifnotexists'
-            value: value
-    temp: (value)->
-        $$ =
-            node: 'temp'
             value: value
 
     column: (columnid, type, carglist)->
@@ -113,10 +81,6 @@ module.exports = G =
             node: 'term'
             subnode: subnode
             value: value
-    autoinc: (value)->
-        $$ =
-            node: 'autoinc'
-            value: value
 
     idx_item: (nm, collate, sortorder)->
         $$ =
@@ -131,51 +95,6 @@ module.exports = G =
             node: 'collate'
             subnode: subnode
             value: value
-    sortorder: (value)->
-        value ?= null
-        $$ =
-            node: 'sortorder'
-            value: value
-    onconf: (resolvetype)->
-        resolvetype ?= null
-        $$ =
-            node: 'onconf'
-            resolvetype: resolvetype
-    orconf: (resolvetype)->
-        resolvetype ?= null
-        $$ =
-            node: 'orconf'
-            resolvetype: resolvetype
-    raisetype: (value)->
-        $$ =
-            node: 'raisetype'
-            value: value
-    resolvetype: (value)->
-        $$ =
-            node: 'resolvetype'
-            value: value
-    refarg_match: (nm)->
-        $$ =
-            node: 'refarg'
-            type: 'match'
-            nm: nm
-    refargs: (event, act)->
-        $$ =
-            node: 'refarg'
-            type: 'on'
-            event: event
-            act: act
-    defer_subclause: (no_defer, init_opt)->
-        $$ =
-            node: 'defer_subclause'
-            no_defer: no_defer
-            init_opt: init_opt
-
-    table_options: (nm)->
-        nm ?= null
-        $$ =
-            node: 'table_options'
-            without: nm
 
     create_table_args_as: (nm)->
         $$ =
@@ -189,11 +108,6 @@ module.exports = G =
             columnlist: columnlist
             conslist: conslist
             table_options: table_options
-    distinct: (value)->
-        value ?= null
-        $$ =
-            node: 'distinct'
-            value: value
 
     create_table: (temp, ifnotexists, fullname)->
         $$ =
@@ -201,26 +115,30 @@ module.exports = G =
             temp: temp
             ifnotexists: ifnotexists
             fullname: fullname
+
     select: (_with, selectnowith)->
         $$ =
             node: 'select'
             with: _with
             selectnowith: selectnowith
-    with: (recursive, wqlist)->
+
+    oneselect: (arr)->
         $$ =
-            node: 'with'
-            recursive: recursive
-            wqlist: wqlist
-    wqlist_item: (nm, idxlist, select)->
+            node: 'oneselect'
+            type: 'normal'
+            distinct:   arr[0]
+            selcollist: arr[1]
+            from:       arr[2]
+            where:      arr[3]
+            groupby:    arr[4]
+            having:     arr[5]
+            orderby:    arr[6]
+            limit:      arr[7]
+    oneselect_values: (values)->
         $$ =
-            node: 'wqlist_item'
-            nm: nm
-            idxlist: idxlist
-            select: select
-    uniqueflag: (value)->
-        $$ =
-            node: 'uniqueflag'
-            value: value
+            node: 'oneselect'
+            type: 'values'
+            values: values
 
     ########################################
     # tcons, Table Creation Options
@@ -373,15 +291,6 @@ module.exports = G =
                 type: 'alter_rename'
                 tablename: tablename
                 newname: newname
-        create_vtab: (ifnotexists, fullname, module_name)->
-            $$ =
-                node: 'cmd'
-                type: 'create_vtab'
-                ifnotexists: ifnotexists
-                fullname: fullname
-                module_name: module_name
-                arglist: []
-
 
     ########################################
     # The terminals with values

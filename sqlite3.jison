@@ -18,25 +18,25 @@ input
 
 cmdlist
     : cmdlist ecmd
-        { $1.push($2); }
+        { if($2){ $1.push($2); } }
     | ecmd
-        { $$ = [ $1 ]; }
+        { $$ = $1 ? [ $1 ] : []; }
     ;
 
 ecmd
     : SEMI
-        { $$ = G.ecmd(); }
+        { $$ = null; }
     | explain cmd SEMI
-        { $$ = G.ecmd($1, $2); }
+        { $$ = $2; $$.explain = $1; }
     ;
 
 explain
     :
-        { $$ = G.explain(false, false); }
+        { $$ = []; }
     | EXPLAIN
-        { $$ = G.explain(true, false); }
+        { $$ = [ $1 ]; }
     | EXPLAIN QUERY PLAN
-        { $$ = G.explain(true, true); }
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 cmd
@@ -108,27 +108,28 @@ cmd
 
 trans_opt
     :
-        { $$ = G.trans_opt(); }
+        { $$ = []; }
     | TRANSACTION
-        { $$ = G.trans_opt(); }
+        { $$ = [ $1 ]; }
     | TRANSACTION nm
-        { $$ = G.trans_opt($2); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 transtype
     :
-        { $$ = G.transtype(); }
+        { $$ = null; }
     | DEFERRED
-        { $$ = G.transtype($1); }
+        { $$ = $1; }
     | IMMEDIATE
-        { $$ = G.transtype($1); }
+        { $$ = $1; }
     | EXCLUSIVE
-        { $$ = G.transtype($1); }
+        { $$ = $1; }
     ;
 
 savepoint_opt
     :
     | SAVEPOINT
+        { /* Ignored */ }
     ;
 
 create_table
@@ -138,16 +139,16 @@ create_table
 
 ifnotexists
     :
-        { $$ = G.ifnotexists(false); }
+        { $$ = []; }
     | IF NOT EXISTS
-        { $$ = G.ifnotexists(true); }
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 temp
     :
-        { $$ = G.temp(false); }
+        { $$ = null; }
     | TEMP
-        { $$ = G.temp(true); }
+        { $$ = $1; }
     ;
 
 create_table_args
@@ -159,9 +160,9 @@ create_table_args
 
 table_options
     :
-        { $$ = G.table_options(); }
+        { $$ = []; }
     | WITHOUT nm
-        { $$ = G.table_options($2); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 columnlist
@@ -230,33 +231,49 @@ carglist
     :
         { $$ = []; }
     | carglist ccons
-        { $1.push($2); /* TODO: ccons not implemented! */ }
+        { $1.push($2); }
     ;
 
 ccons
     : CONSTRAINT nm
+        { $$ = [ $1, $2 ]; }
     | DEFAULT term
+        { $$ = [ $1, $2 ]; }
     | DEFAULT LP expr RP
+        { $$ = [ $1, $2, $3, $4 ]; }
     | DEFAULT PLUS term
+        { $$ = [ $1, $2, $3 ]; }
     | DEFAULT MINUS term
+        { $$ = [ $1, $2, $3 ]; }
     | DEFAULT ID
+        { $$ = [ $1, $2 ]; }
     | DEFAULT INDEXED
+        { $$ = [ $1, $2 ]; }
     | NULL onconf
+        { $$ = [ $1 ].concat($2); }
     | NOT NULL onconf
+        { $$ = [ $1, $2 ].concat($2); }
     | PRIMARY KEY sortorder onconf autoinc
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
     | UNIQUE onconf
+        { $$ = [ $1 ].concat($2); }
     | CHECK LP expr RP
+        { $$ = [ $1, $2, $3, $4 ]; }
     | REFERENCES nm idxlist_opt refargs
+        { $$ = [ $1, $2, $3, $4 ]; }
     | defer_subclause
+        { $$ = $1; }
     | COLLATE ID
+        { $$ = [ $1, $2 ]; }
     | COLLATE STRING
+        { $$ = [ $1, $2 ]; }
     ;
 
 autoinc
     :
-        { $$ = G.autoinc(false); }
+        { $$ = null; }
     | AUTOINCR
-        { $$ = G.autoinc(true); }
+        { $$ = $1; }
     ;
 
 refargs
@@ -268,42 +285,42 @@ refargs
 
 refarg
     : MATCH nm
-        { $$ = G.refarg_match($2); }
+        { $$ = [ $1, $2 ]; }
     | ON INSERT refact
-        { $$ = G.refarg($2, $3); }
+        { $$ = [ $1, $2].concat($3); }
     | ON DELETE refact
-        { $$ = G.refarg($2, $3); }
+        { $$ = [ $1, $2].concat($3); }
     | ON UPDATE refact
-        { $$ = G.refarg($2, $3); }
+        { $$ = [ $1, $2].concat($3); }
     ;
 
 refact
     : SET NULL
-        { $$ = $1 + ' ' + $2; }
+        { $$ = [ $1, $2 ]; }
     | SET DEFAULT
-        { $$ = $1 + ' ' + $2; }
+        { $$ = [ $1, $2 ]; }
     | CASCADE
-        { $$ = $1; }
+        { $$ = [ $1 ]; }
     | RESTRICT
-        { $$ = $1; }
+        { $$ = [ $1 ]; }
     | NO ACTION
-        { $$ = $1 + ' ' + $2; }
+        { $$ = [ $1, $2 ]; }
     ;
 
 defer_subclause
     : NOT DEFERRABLE init_deferred_pred_opt
-        { $$ = G.defer_subclause(true, $3); }
+        { $$ = [ $1, $2 ].concat($3); }
     | DEFERRABLE init_deferred_pred_opt
-        { $$ = G.defer_subclause(false, $2); }
+        { $$ = [ $1, $2 ].concat($3); }
     ;
 
 init_deferred_pred_opt
     :
-        { $$ = null; }
+        { $$ = []; }
     | INITIALLY DEFERRED
-        { $$ = $1 + ' ' + $2; }
+        { $$ = [ $1, $2 ]; }
     | INITIALLY IMMEDIATE
-        { $$ = $1 + ' ' + $2; }
+        { $$ = [ $1, $2 ]; }
     ;
 
 conslist_opt
@@ -323,6 +340,7 @@ conslist
 tconscomma
     :
     | COMMA
+        { /* Ignored */ }
     ;
 
 tcons
@@ -348,31 +366,32 @@ defer_subclause_opt
 
 onconf
     :
-        { $$ = G.onconf(); }
+        { $$ = []; }
     | ON CONFLICT resolvetype
-        { $$ = G.onconf($3); }
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 orconf
     :
+        { $$ = []; }
     | OR resolvetype
-        { $$ = G.orconf($2); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 resolvetype
     : raisetype
-        { $$ = G.resolvetype($1.value); }
+        { $$ = $1; }
     | IGNORE
-        { $$ = G.resolvetype($1); }
+        { $$ = $1; }
     | REPLACE
-        { $$ = G.resolvetype($1); }
+        { $$ = $1; }
     ;
 
 ifexists
     :
-        { $$ = G.ifexists(false); }
+        { $$ = []; }
     | IF EXISTS
-        { $$ = G.ifexists(true); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 select
@@ -382,33 +401,43 @@ select
 
 selectnowith
     : oneselect
+        { $$ = [ $1 ]; }
     | selectnowith multiselect_op oneselect
+        { $1.push($2); $1.push($3); }
     ;
 
 multiselect_op
     : UNION
+        { $$ = $1; }
     | UNION ALL
+        { $$ = $1; }
     | EXCEPT
+        { $$ = $1; }
     | INTERSECT
+        { $$ = $1; }
     ;
 
 oneselect
     : SELECT distinct selcollist from where_opt groupby_opt having_opt orderby_opt limit_opt
+        { $$ = G.oneselect([$2, $3, $4, $5, $6, $7, $8]); }
     | values
+        { $$ = G.oneselect_values($1); }
     ;
 
 values
     : VALUES LP nexprlist RP
+        { $$ = [ $3 ]; }
     | values COMMA LP exprlist RP
+        { $1.push($4); }
     ;
 
 distinct
     :
-        { $$ = G.distinct(); }
+        { $$ = null; }
     | DISTINCT
-        { $$ = G.distinct($1); }
+        { $$ = $1; }
     | ALL
-        { $$ = G.distinct($1); }
+        { $$ = $1; }
     ;
 
 sclp
@@ -460,10 +489,15 @@ fullname
 
 joinop
     : COMMA
+        { $$ = [ $1 ]; }
     | JOIN
+        { $$ = [ $1 ]; }
     | JOIN_KW JOIN
+        { $$ = [ $1, $2 ]; }
     | JOIN_KW nm JOIN
+        { $$ = [ $1, $2, $3 ]; }
     | JOIN_KW nm nm JOIN
+        { $$ = [ $1, $2, $3, $4 ]; }
     ;
 
 on_opt
@@ -494,38 +528,50 @@ sortlist
 
 sortorder
     :
-        { $$ = G.sortorder(); }
+        { $$ = null; }
     | ASC
-        { $$ = G.sortorder($1); }
+        { $$ = $1; }
     | DESC
-        { $$ = G.sortorder($1); }
+        { $$ = $1; }
     ;
 
 groupby_opt
     :
+        { $$ = []; }
     | GROUP BY nexprlist
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 having_opt
     :
+        { $$ = []; }
     | HAVING expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 limit_opt
     :
+        { $$ = []; }
     | LIMIT expr
+        { $$ = [ $1, $2 ]; }
     | LIMIT expr OFFSET expr
+        { $$ = [ $1, $2, $3, $4 ]; }
     | LIMIT expr COMMA expr
+        { $$ = [ $1, $2, $3, $4 ]; }
     ;
 
 where_opt
     :
+        { $$ = []; }
     | WHERE expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 setlist
     : setlist COMMA nm EQ expr
+        { $1.push([ $1, $2, $3 ]); }
     | nm EQ expr
+        { $$ = [ [ $1, $2, $3 ] ]; }
     ;
 
 insert_cmd
@@ -648,19 +694,23 @@ case_operand
 
 exprlist
     :
+        { $$ = null; }
     | nexprlist
+        { $$ = $1; }
     ;
 
 nexprlist
     : nexprlist COMMA expr
+        { $1.push($3); }
     | expr
+        { $$ = [ $1 ]; }
     ;
 
 uniqueflag
     :
-        { $$ = G.uniqueflag(false); }
+        { $$ = null; }
     | UNIQUE
-        { $$ = G.uniqueflag(true); }
+        { $$ = $1; }
     ;
 
 idxlist_opt
@@ -770,11 +820,11 @@ trigger_cmd
 
 raisetype
     : ROLLBACK
-        { $$ = G.raisetype($1); }
+        { $$ = $1; }
     | ABORT
-        { $$ = G.raisetype($1); }
+        { $$ = $1; }
     | FAIL
-        { $$ = G.raisetype($1); }
+        { $$ = $1; }
     ;
 
 key_opt
@@ -799,7 +849,7 @@ kwcolumn_opt
 
 create_vtab
     : CREATE VIRTUAL TABLE ifnotexists fullname USING nm
-        { $$ = G_C.create_vtab($4, $5, $7); }
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7 ]; }
     ;
 
 vtabarglist
@@ -847,18 +897,18 @@ anylist
 
 with
     :
-        { $$ = null; }
+        { $$ = []; }
     | WITH wqlist
-        { $$ = G.with(false, $2); }
+        { $$ = [ $1, $2 ]; }
     | WITH RECURSIVE wqlist
-        { $$ = G.with(true, $2); }
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 wqlist
     : nm idxlist_opt AS LP select RP
-        { $$ = [ G.wqlist_item($1, $2, $5) ]; }
+        { $$ = [ [ $1, $2, $3, $4, $5, $6 ] ]; }
     | wqlist COMMA nm idxlist_opt AS LP select RP
-        { $1.push(G.wqlist_item($1, $2, $5)); }
+        { $1.push([ $1, $2, $3, $4, $5, $6 ]); }
     ;
 
 
