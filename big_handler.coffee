@@ -26,11 +26,6 @@ module.exports = G =
             value: value
             subnode: subnode
 
-    dbnm: (nm)->
-        $$ =
-            node: 'dbnm'
-            nm: nm
-
     nmnum: (type, subnode)->
         if 'PLUS_NUM' == type or 'NM' == type
             value = subnode.value
@@ -40,21 +35,6 @@ module.exports = G =
             node: 'nmnum'
             type: type
             subnode: subnode
-            value: value
-
-    fullname: (nm, dbnm)->
-        nm ?= null
-        dbnm ?= null
-        if !nm || !nm.value
-            value = null
-        else if dbnm && dbnm.nm && dbnm.nm.value
-            value = nm.value + "." + dbnm.nm.value
-        else
-            value = nm.value
-        $$ =
-            node: "nm_full"
-            nm: nm
-            dbnm: dbnm
             value: value
 
     column: (columnid, type, carglist)->

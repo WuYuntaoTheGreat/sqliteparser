@@ -477,14 +477,14 @@ seltablist
 
 dbnm
     :
-        { $$ = G.dbnm(); }
+        { $$ = null; }
     | DOT nm
-        { $$ = G.dbnm($2); }
+        { $$ = $2; }
     ;
 
 fullname
     : nm dbnm
-        { $$ = G.fullname($1, $2); }
+        { $$ = $2 != null ? [ $1, '.', $2 ] : [ $1 ]; }
     ;
 
 joinop
