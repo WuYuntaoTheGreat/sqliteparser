@@ -13,6 +13,8 @@ ssubstring = (str, start, end)->
 # The exports.
 ################################################################################
 module.exports = G =
+    #########################################
+    # Semi non-terminals:
     nm: (subnode, type)->
         switch type
             when 'ID'       then value = subnode.value
@@ -63,33 +65,8 @@ module.exports = G =
             subnode: subnode
             value: value
 
-    idx_item: (nm, collate, sortorder)->
-        $$ =
-            node: 'idx_item'
-            nm: nm
-            collate: collate
-            sortorder: sortorder
-    collate: (subnode)->
-        subnode ?= null
-        value = if subnode then subnode.value else null
-        $$ =
-            node: 'collate'
-            subnode: subnode
-            value: value
-
-    create_table_args_as: (nm)->
-        $$ =
-            node: 'create_table_args'
-            type: 'as'
-            as: nm
-    create_table_args: (columnlist, conslist, table_options)->
-        $$ =
-            node: 'create_table_args'
-            type: 'normal'
-            columnlist: columnlist
-            conslist: conslist
-            table_options: table_options
-
+    #########################################
+    # Important creations.
     create_table: (temp, ifnotexists, fullname)->
         $$ =
             node: 'create_table'
@@ -102,6 +79,11 @@ module.exports = G =
             node: 'select'
             with: _with
             selectnowith: selectnowith
+
+    expr: (arr)->
+        $$ =
+            node: 'expr'
+            operators: arr
 
     oneselect: (arr)->
         $$ =

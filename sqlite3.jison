@@ -153,9 +153,9 @@ temp
 
 create_table_args
     : LP columnlist conslist_opt RP table_options
-        { $$ = G.create_table_args(); }
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
     | AS select
-        { $$ = G.create_table_args_as($2); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 table_options
@@ -624,59 +624,62 @@ idlist
     ;
 
 expr
-    : term
-    | LP expr RP
-    | ID
-    | INDEXED
-    | JOIN_KW
-    | nm DOT nm
-    | nm DOT nm DOT nm
-    | VARIABLE
-    | expr COLLATE ID
-    | expr COLLATE STRING
+    : term                              { $$ = G.expr([ $1 ]); }
+    | LP expr RP                        { $$ = G.expr([ $1, $2, $3 ]); }
+    | ID                                { $$ = G.expr([ $1 ]); }
+    | INDEXED                           { $$ = G.expr([ $1 ]); }
+    | JOIN_KW                           { $$ = G.expr([ $1 ]); }
+    | nm DOT nm                         { $$ = G.expr([ $1, $2, $3 ]); }
+    | nm DOT nm DOT nm                  { $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | VARIABLE                          { $$ = G.expr([ $1 ]); }
+    | expr COLLATE ID                   { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr COLLATE STRING               { $$ = G.expr([ $1, $2, $3 ]); }
     | CAST LP expr AS typetoken RP
-    | ID LP distinct exprlist RP
-    | INDEXED LP distinct exprlist RP
-    | ID LP STAR RP
-    | INDEXED LP STAR RP
-    | expr AND expr
-    | expr OR expr
-    | expr LT expr
-    | expr GT expr
-    | expr GE expr
-    | expr LE expr
-    | expr EQ expr
-    | expr NE expr
-    | expr BITAND expr
-    | expr BITOR expr
-    | expr LSHIFT expr
-    | expr RSHIFT expr
-    | expr PLUS expr
-    | expr MINUS expr
-    | expr STAR expr
-    | expr SLASH expr
-    | expr REM expr
-    | expr CONCAT expr
-    | expr likeop expr
-    | expr likeop expr ESCAPE expr
-    | expr ISNULL
-    | expr NOTNULL
-    | expr NOT NULL
-    | expr IS expr
-    | expr IS NOT expr
-    | NOT expr
-    | BITNOT expr
-    | MINUS expr
-    | PLUS expr
-    | expr between_op expr AND expr
-    | expr in_op LP exprlist RP
-    | LP select RP
-    | expr in_op LP select RP
-    | expr in_op fullname
-    | EXISTS LP select RP
+        { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
+    | ID LP distinct exprlist RP        { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | INDEXED LP distinct exprlist RP   { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | ID LP STAR RP                     { $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | INDEXED LP STAR RP                { $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | expr AND expr                     { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr OR expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LT expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GT expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr EQ expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr NE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITAND expr                  { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITOR expr                   { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LSHIFT expr                  { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr RSHIFT expr                  { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr PLUS expr                    { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr MINUS expr                   { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr STAR expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr SLASH expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr REM expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr CONCAT expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr ESCAPE expr 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr ISNULL 		                { $$ = G.expr([ $1, $2 ]); }
+    | expr NOTNULL 		                { $$ = G.expr([ $1, $2 ]); }
+    | expr NOT NULL 	                { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS expr 		                { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS NOT expr 	                { $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | NOT expr 		                    { $$ = G.expr([ $1, $2 ]); }
+    | BITNOT expr 		                { $$ = G.expr([ $1, $2 ]); }
+    | MINUS expr 		                { $$ = G.expr([ $1, $2 ]); }
+    | PLUS expr 		                { $$ = G.expr([ $1, $2 ]); }
+    | expr between_op expr AND expr 	{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr in_op LP exprlist RP 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | LP select RP 		                { $$ = G.expr([ $1, $2, $3 ]); }
+    | expr in_op LP select RP 		    { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | expr in_op fullname 		        { $$ = G.expr([ $1, $2, $3 ]); }
+    | EXISTS LP select RP 		        { $$ = G.expr([ $1, $2, $3, $4 ]); }
     | CASE case_operand case_exprlist case_else END
-    | RAISE LP IGNORE RP
+        { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | RAISE LP IGNORE RP                { $$ = G.expr([ $1, $2, $3 ]); }
     | RAISE LP raisetype COMMA nm RP
+        { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
     ;
 
 term
@@ -770,18 +773,18 @@ idxlist_opt
 
 idxlist
     : nm collate sortorder
-        { $$ = [ G.idx_item($1, $2, $3) ]; }
+        { $$ = [ [ $1, $2, $3 ] ]; }
     | idxlist COMMA nm collate sortorder
-        { $1.push(G.idx_item($3, $4, $5)); }
+        { $1.push([ $3, $4, $5 ]); }
     ;
 
 collate
     :
-        { $$ = collate(); }
+        { $$ = [] }
     | COLLATE ID
-        { $$ = collate($2); }
+        { $$ = [ $1, $2 ]; }
     | COLLATE STRING
-        { $$ = collate($2); }
+        { $$ = [ $1, $2 ]; }
     ;
 
 nmnum
