@@ -283,6 +283,7 @@ module.exports = G =
                 node: 'ID'
                 raw: value
                 value: value
+
         string: (value)->
             $$ =
                 node: 'STRING'
@@ -305,6 +306,7 @@ module.exports = G =
                     @raw = "-" + @raw
                     @value = - @value
                     this
+
         variable: (value)->
             position = null
             name = null

@@ -773,42 +773,61 @@ trigger_decl
 
 trigger_time
     :
+        { $$ = []; }
     | BEFORE
+        { $$ = [ $1 ]; }
     | AFTER
+        { $$ = [ $1 ]; }
     | INSTEAD OF
+        { $$ = [ $1, $2 ]; }
     ;
 
 trigger_event
     : DELETE
+        { $$ = [ $1 ]; }
     | INSERT
+        { $$ = [ $1 ]; }
     | UPDATE
+        { $$ = [ $1 ]; }
     | UPDATE OF idlist
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 foreach_clause
     :
+        { $$ = []; }
     | FOR EACH ROW
+        { $$ = [ $1, $2, $3 ]; }
     ;
 
 when_clause
     :
+        { $$ = []; }
     | WHEN expr
+        { $$ = [ $1, $2 ]; }
     ;
 
 trigger_cmd_list
     : trigger_cmd_list trigger_cmd SEMI
+        { $1.push($2); }
     | trigger_cmd SEMI
+        { $$ = [ $1 ]; }
     ;
 
 trnm
     : nm
+        { $$ = [ $1 ]; }
     | nm DOT nm
+        { $$ = [ $1, '.', $3 ]; }
     ;
 
 tridxby
     :
+        { $$ = []; }
     | INDEXED BY nm
+        { $$ = [ $1, $2, $3 ]; }
     | NOT INDEXED
+        { $$ = [ $1, $2 ]; }
     ;
 
 trigger_cmd
