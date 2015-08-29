@@ -9,6 +9,21 @@ var G_C = G.cmd;
 
 %}
 
+%left LSHIFT
+%left RSHIFT
+%left GE
+%left GT
+%left LE
+%left LT
+%left BITAND
+%left PLUS
+%left MINUS
+%left STAR
+%left SLASH
+%left REM
+%left CONCAT
+%left BITOR
+
 %start input
 %%
 
