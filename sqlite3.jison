@@ -114,10 +114,16 @@ cmd
         { $$ = G_C.alter_rename($3, $6); }
     | ALTER TABLE add_column_fullname ADD kwcolumn_opt column
         { $$ = G_C.alter_add_column($3, $6); }
+/*
+ * The rule of 'CREATE VIRTUAL TABLE  ...' is not implemented
+ * because of the difficulty of wildcard token: ANY
+ */
+/*
     | create_vtab
         { $$ = $1; }
     | create_vtab LP vtabarglist RP
         { $$ = $1; $$.arglist = $3; }
+*/
     ;
 
 trans_opt
@@ -944,50 +950,50 @@ kwcolumn_opt
 
 create_vtab
     : CREATE VIRTUAL TABLE ifnotexists fullname USING nm
-        { $$ = [ $1, $2, $3, $4, $5, $6, $7 ]; }
+        { /* Unimplemented */  }
     ;
 
 vtabarglist
     : vtabarg
-        { $$ = [ $1 ]; }
     | vtabarglist COMMA vtabarg
-        { $1.push($3); }
+        { /* Unimplemented */  }
     ;
 
 vtabarg
     :
-        { $$ = null;  /* }
-            # ========================================
-            FIXME: The virtual table creation statement
-            can take zero or more comma-separated
-            arguments. The arguments can be just about
-            ANY text as long as it has balanced
-            parentheses. For example:
-
-            CREATE VIRTUAL TABLE IF NOT EXISTS \
-                tablename USING module ( arg, arg ... );
-
-            The source code of Sqlite itself use the
-            Terminal "ANY", which I don't know if is a
-            key word of lemon parser, but it's surely
-            not work in Jison. I need to figure out how
-            to implement this.
-            # ========================================
-
+    /*
+     * ===========================================
+     * FIXME: The virtual table creation statement
+     * can take zero or more comma-separated
+     * arguments. The arguments can be just about
+     * ANY text as long as it has balanced
+     * parentheses. For example:
+     *
+     * CREATE VIRTUAL TABLE IF NOT EXISTS \
+     *     tablename USING module ( arg, arg ... );
+     *
+     * The source code of Sqlite itself use the
+     * Terminal "ANY", which I don't know if is a
+     * key word of lemon parser, but it's surely
+     * not work in Jison. I need to figure out how
+     * to implement this.
+     * ===========================================
+     */
     | vtabarg vtabargtoken
-        { $1.push($2); }
+        { /* Unimplemented */  }
     ;
 
 vtabargtoken
     : ANY
     | LP anylist RP
+        { /* Unimplemented */  }
     ;
 
 anylist
     :
     | anylist LP anylist RP
     | anylist ANY
-        {*/}
+        { /* Unimplemented */  }
     ;
 
 with
