@@ -198,19 +198,9 @@ columnid
 
 nm
     : ID
-        { $$ = G.nm($1, "ID"); /* } 
-            #========================================
-            FIXME: This must be wrong. Either the 
-            parsing of terminal "INDEXED" is wrong,
-            or the use of yacc file of this terminal
-            is wrong.  The yacc file is probably 
-            right, because "INDEX" appeared more than
-            once. Maybe the terminal "INDEXED" means
-            member of array member with index, like:
-                ABC[1]
-            #========================================
+        { $$ = G.nm($1, "ID"); }
     | INDEXED
-        { $$ = G.nm($1, "INDEXED"); } */ }
+        { $$ = G.nm($1, "INDEXED"); }
     | STRING
         { $$ = G.nm($1, "STRING"); }
     | JOIN_KW
@@ -377,7 +367,7 @@ tcons
     | CHECK LP expr RP onconf
         { $$ = [ $1, $2, $3, $4, $5 ]; }
     | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs \
-      defer_subclause_opt 
+      defer_subclause_opt
         { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
     ;
 
@@ -814,15 +804,15 @@ collate
 
 nmnum
     : plus_num
-        { $$ = G.nmnum("PLUS_NUM", $1); }
+        { $$ = $1; }
     | nm
-        { $$ = G.nmnum("NM", $1); }
+        { $$ = $1; }
     | ON
-        { $$ = G.nmnum("ON"); }
+        { $$ = $1; }
     | DELETE
-        { $$ = G.nmnum("DELETE"); }
+        { $$ = $1; }
     | DEFAULT
-        { $$ = G.nmnum("DEFAULT"); }
+        { $$ = $1; }
     ;
 
 plus_num

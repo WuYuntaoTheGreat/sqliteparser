@@ -16,28 +16,17 @@ module.exports = G =
     #########################################
     # Semi non-terminals:
     nm: (subnode, type)->
-        switch type
-            when 'ID'       then value = subnode.value
-            when 'STRING'   then value = subnode.value
-            when 'JOIN_KW'  then value = subnode.type
-            else
-                value = null
         $$ =
             node: 'nm'
             type: type
-            value: value
             subnode: subnode
-
-    nmnum: (type, subnode)->
-        if 'PLUS_NUM' == type or 'NM' == type
-            value = subnode.value
-        else
-            value = type
-        $$ =
-            node: 'nmnum'
-            type: type
-            subnode: subnode
-            value: value
+            value: switch type
+                when 'ID'       then subnode.value
+                when 'STRING'   then subnode.value
+                when 'JOIN_KW'  then subnode.type
+                when 'INDEXED'  then 'INDEXED'
+                else
+                    null
 
     column: (columnid, type, carglist)->
         $$ =
