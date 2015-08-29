@@ -29,17 +29,12 @@ cmdlist
 ecmd
     : SEMI
         { $$ = null; }
-    | explain cmd SEMI
-        { $$ = $2; $$.explain = $1; }
-    ;
-
-explain
-    :
-        { $$ = []; }
-    | EXPLAIN
-        { $$ = [ $1 ]; }
-    | EXPLAIN QUERY PLAN
-        { $$ = [ $1, $2, $3 ]; }
+    | cmd SEMI
+        { $$ = $1; $$.explain = []; }
+    | EXPLAIN cmd SEMI
+        { $$ = $2; $$.explain = [ $1 ]; }
+    | EXPLAIN QUERY PLAN cmd SEMI
+        { $$ = $4; $$.explain = [ $1, $2, $3 ]; }
     ;
 
 cmd
@@ -128,7 +123,7 @@ cmd
         { $$ = $1; }
     | create_vtab LP vtabarglist RP
         { $$ = $1; $$.arglist = $3; }
-*/
+ */
     ;
 
 trans_opt
