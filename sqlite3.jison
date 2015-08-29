@@ -61,8 +61,10 @@ cmd
         { $$ = G_C.create_table($1, $2); }
     | DROP TABLE ifexists fullname
         { $$ = G_C.drop_table($3, $4); }
-    | CREATE temp VIEW ifnotexists fullname AS select
+    | CREATE TEMP VIEW ifnotexists fullname AS select
         { $$ = G_C.create_view($2, $4, $5, $7); }
+    | CREATE VIEW ifnotexists fullname AS select
+        { $$ = G_C.create_view(null, $3, $4, $6); }
     | DROP VIEW ifexists fullname
         { $$ = G_C.drop_view($3, $4); }
     | select
@@ -75,9 +77,12 @@ cmd
         { $$ = G_C.insert($2, $4, $5, $6); }
     | with insert_cmd INTO fullname inscollist_opt DEFAULT VALUES
         { $$ = G_C.insert($2, $4, $5, [ $6, $7 ]); }
-    | CREATE uniqueflag INDEX ifnotexists fullname ON nm LP idxlist RP \
+    | CREATE UNIQUE INDEX ifnotexists fullname ON nm LP idxlist RP \
       where_opt
         { $$ = G_C.create_index($2, $4, $5, $7, $9, $11); }
+    | CREATE INDEX ifnotexists fullname ON nm LP idxlist RP \
+      where_opt
+        { $$ = G_C.create_index(null, $3, $4, $6, $8, $10); }
     | DROP INDEX ifexists fullname
         { $$ = G_C.drop_index($3, $3); }
     | VACUUM
@@ -153,8 +158,10 @@ savepoint_opt
     ;
 
 create_table
-    : CREATE temp TABLE ifnotexists fullname
+    : CREATE TEMP TABLE ifnotexists fullname
         { $$ = [ $2, $4, $5 ]; }
+    | CREATE TABLE ifnotexists fullname
+        { $$ = [ null, $3, $4 ]; }
     ;
 
 ifnotexists
@@ -162,13 +169,6 @@ ifnotexists
         { $$ = []; }
     | IF NOT EXISTS
         { $$ = [ $1, $2, $3 ]; }
-    ;
-
-temp
-    :
-        { $$ = null; }
-    | TEMP
-        { $$ = $1; }
     ;
 
 create_table_args
@@ -778,13 +778,6 @@ nexprlist
         { $$ = [ $1 ]; }
     ;
 
-uniqueflag
-    :
-        { $$ = null; }
-    | UNIQUE
-        { $$ = $1; }
-    ;
-
 idxlist_opt
     :
         { $$ = []; }
@@ -840,9 +833,12 @@ minus_num
     ;
 
 trigger_decl
-    : temp TRIGGER ifnotexists fullname trigger_time trigger_event ON \
+    : TEMP TRIGGER ifnotexists fullname trigger_time trigger_event ON \
       fullname foreach_clause when_clause
         { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
+    | TRIGGER ifnotexists fullname trigger_time trigger_event ON \
+      fullname foreach_clause when_clause
+        { $$ = [ null, $1, $2, $3, $4, $5, $6, $7, $8, $9 ]; }
     ;
 
 trigger_time
