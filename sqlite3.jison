@@ -148,7 +148,7 @@ savepoint_opt
 
 create_table
     : CREATE temp TABLE ifnotexists fullname
-        { $$ = G.create_table($2, $4, $5); }
+        { $$ = [ $2, $4, $5 ]; }
     ;
 
 ifnotexists
@@ -709,17 +709,17 @@ expr
 
 term
     : NULL
-        { $$ = G.term("NULL"); }
+        { $$ = $1; }
     | INTEGER
-        { $$ = G.term("INTEGER", $1); }
+        { $$ = $1; }
     | FLOAT
-        { $$ = G.term("FLOAT", $1); }
+        { $$ = $1; }
     | BLOB
-        { $$ = G.term("BLOB", $1); }
+        { $$ = $1; }
     | STRING
-        { $$ = G.term("STRING", $1); }
+        { $$ = $1; }
     | CTIME_KW
-        { $$ = G.term("CTIME_KW", $1); }
+        { $$ = $1; }
     ;
 
 likeop

@@ -54,31 +54,13 @@ module.exports = G =
             param1: param1
             param2: param2
 
-    term: (type, subnode)->
-        subnode ?= null
-        if 'NULL' == type
-            value = type
-        else
-            value = subnode.value
-        $$ =
-            node: 'term'
-            subnode: subnode
-            value: value
-
     #########################################
     # Important creations.
-    create_table: (temp, ifnotexists, fullname)->
-        $$ =
-            node: 'create_table'
-            temp: temp
-            ifnotexists: ifnotexists
-            fullname: fullname
-
     select: (_with, selectnowith)->
         $$ =
             node: 'select'
             with: _with
-            selectnowith: selectnowith
+            select: selectnowith
 
     expr: (arr)->
         $$ =
@@ -97,6 +79,7 @@ module.exports = G =
             having:     arr[5]
             orderby:    arr[6]
             limit:      arr[7]
+
     oneselect_values: (values)->
         $$ =
             node: 'oneselect'
@@ -233,11 +216,25 @@ module.exports = G =
                 ifexists: ifexists
                 fullname: fullname
         create_table: (create, args)->
+            _args = null
+            if 'AS' == args[0]
+                _args =
+                    type: 'as'
+                    as: args[1]
+            else
+                _args =
+                    type: 'normal'
+                    columnlist:     args[1]
+                    conslist:       args[2]
+                    table_options:  args[4]
+
             $$ =
                 node: 'cmd'
                 type: 'create_table'
-                create: create
-                args: args
+                temp:        create[0]
+                ifnotexists: create[1]
+                fullname:    create[2]
+                args: _args
 
         pragma: (key, operator, value)->
             operator ?= null
