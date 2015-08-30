@@ -53,8 +53,16 @@ ecmd
     ;
 
 cmd
-    : BEGIN transtype trans_opt
+    /* BEGIN TRANSACTION */
+    : BEGIN
+        { $$ = G_C.begin_trans(null, []); }
+    | BEGIN transtype
+        { $$ = G_C.begin_trans($2, []); }
+    | BEGIN trans_opt
+        { $$ = G_C.begin_trans(null, $2); }
+    | BEGIN transtype trans_opt
         { $$ = G_C.begin_trans($2, $3); }
+
     | COMMIT trans_opt
         { $$ = G_C.commit_trans($2); }
     | END trans_opt
@@ -142,18 +150,14 @@ cmd
     ;
 
 trans_opt
-    :
-        { $$ = []; }
-    | TRANSACTION
+    : TRANSACTION
         { $$ = [ $1 ]; }
     | TRANSACTION nm
         { $$ = [ $1, $2 ]; }
     ;
 
 transtype
-    :
-        { $$ = null; }
-    | DEFERRED
+    : DEFERRED
         { $$ = $1; }
     | IMMEDIATE
         { $$ = $1; }
@@ -176,7 +180,7 @@ create_table
 
 ifnotexists
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 01 */ }
     | IF NOT EXISTS
         { $$ = [ $1, $2, $3 ]; }
     ;
@@ -190,7 +194,7 @@ create_table_args
 
 table_options
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 02 */ }
     | WITHOUT nm
         { $$ = [ $1, $2 ]; }
     ;
@@ -215,8 +219,13 @@ columnid
 nm
     : ID
         { $$ = G.nm($1, "ID"); }
+/*
+ * This caused conflict when 'NOT INDEXED' encountered.
+ */
+/*
     | INDEXED
         { $$ = G.nm($1, "INDEXED"); }
+ */
     | STRING
         { $$ = G.nm($1, "STRING"); }
     | JOIN_KW
@@ -259,7 +268,7 @@ signed
 
 carglist
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 03 */ }
     | carglist ccons
         { $1.push($2); }
     ;
@@ -269,11 +278,17 @@ ccons
         { $$ = [ $1, $2 ]; }
     | DEFAULT term
         { $$ = [ $1, $2 ]; }
+    | DEFAULT STRING            /* Separate STRING from term */
+        { $$ = [ $1, $2 ]; }
     | DEFAULT LP expr RP
         { $$ = [ $1, $2, $3, $4 ]; }
     | DEFAULT PLUS term
         { $$ = [ $1, $2, $3 ]; }
+    | DEFAULT PLUS STRING       /* Separate STRING from term */
+        { $$ = [ $1, $2, $3 ]; }
     | DEFAULT MINUS term
+        { $$ = [ $1, $2, $3 ]; }
+    | DEFAULT MINUS STRING      /* Separate STRING from term */
         { $$ = [ $1, $2, $3 ]; }
     | DEFAULT ID
         { $$ = [ $1, $2 ]; }
@@ -308,7 +323,7 @@ autoinc
 
 refargs
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 04 */ }
     | refargs refarg
         { $1.push($2); }
     ;
@@ -346,7 +361,7 @@ defer_subclause
 
 init_deferred_pred_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 05 */ }
     | INITIALLY DEFERRED
         { $$ = [ $1, $2 ]; }
     | INITIALLY IMMEDIATE
@@ -355,22 +370,18 @@ init_deferred_pred_opt
 
 conslist_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 06 */ }
     | COMMA conslist
         { $$ = $2; }
     ;
 
 conslist
-    : conslist tconscomma tcons
+    : conslist COMMA tcons
         { $1.push($3); }
+    | conslist tcons
+        { $1.push($2); }
     | tcons
         { $$ = [ $1 ]; }
-    ;
-
-tconscomma
-    :
-    | COMMA
-        { /* Ignored */ }
     ;
 
 tcons
@@ -396,14 +407,14 @@ defer_subclause_opt
 
 onconf
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 07 */ }
     | ON CONFLICT resolvetype
         { $$ = [ $1, $2, $3 ]; }
     ;
 
 orconf
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 08 */ }
     | OR resolvetype
         { $$ = [ $1, $2 ]; }
     ;
@@ -419,7 +430,7 @@ resolvetype
 
 ifexists
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 09 */ }
     | IF EXISTS
         { $$ = [ $1, $2 ]; }
     ;
@@ -489,7 +500,7 @@ selcollist
 
 as
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 10 */ }
     | AS nm
         { $$ = [ $1, $2 ]; }
     | ID
@@ -500,9 +511,10 @@ as
 
 from
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 11 */ }
     | FROM seltablist
         { $$ = [ $1, $2 ]; }
+/*
     ;
 
 stl_prefix
@@ -521,6 +533,25 @@ seltablist
         { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6, $7 ]); }
     | stl_prefix LP seltablist RP as on_opt using_opt
         { $$ = null != $1 ? $1 : []; $$.push([ $2, $3, $4, $5, $6, $7 ]); }
+ */
+    ;
+
+seltablist
+    : seltabitem
+        { $$ = [ $1 ]; }
+    | seltablist joinop seltabitem
+        { $1.push($2, $3); }
+    ;
+
+seltabitem
+    : fullname as indexed_opt on_opt using_opt
+        { $$.push([ $1, $2, $3, $4, $5 ]); }
+    | fullname LP exprlist RP as on_opt using_opt
+        { $$.push([ $1, $2, $3, $4, $5, $6, $7 ]); }
+    | LP select RP as on_opt using_opt
+        { $$.push([ $1, $2, $3, $4, $5, $6 ]); }
+    | LP seltablist RP as on_opt using_opt
+        { $$.push([ $1, $2, $3, $4, $5, $6 ]); }
     ;
 
 dbnm
@@ -550,14 +581,14 @@ joinop
 
 on_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 12 */ }
     | ON expr
         { $$ = [ $1, $2 ]; }
     ;
 
 indexed_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 13 */ }
     | INDEXED BY nm
         { $$ = [ $1, $2, $3 ]; }
     | NOT INDEXED
@@ -566,14 +597,14 @@ indexed_opt
 
 using_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 14 */ }
     | USING LP idlist RP
         { $$ = [ $1, $2, $3 ]; }
     ;
 
 orderby_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 15 */ }
     | ORDER BY sortlist
         { $$ = [ $1, $2, $3 ]; }
     ;
@@ -596,21 +627,21 @@ sortorder
 
 groupby_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 16 */ }
     | GROUP BY nexprlist
         { $$ = [ $1, $2, $3 ]; }
     ;
 
 having_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 17 */ }
     | HAVING expr
         { $$ = [ $1, $2 ]; }
     ;
 
 limit_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 18 */ }
     | LIMIT expr
         { $$ = [ $1, $2 ]; }
     | LIMIT expr OFFSET expr
@@ -621,7 +652,7 @@ limit_opt
 
 where_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 19 */ }
     | WHERE expr
         { $$ = [ $1, $2 ]; }
     ;
@@ -642,7 +673,7 @@ insert_cmd
 
 inscollist_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 20 */ }
     | LP idlist RP
         { $$ = [ $1, $2, $3 ]; }
     ;
@@ -655,62 +686,63 @@ idlist
     ;
 
 expr
-    : term                              { $$ = G.expr([ $1 ]); }
-    | LP expr RP                        { $$ = G.expr([ $1, $2, $3 ]); }
-    | ID                                { $$ = G.expr([ $1 ]); }
-    | INDEXED                           { $$ = G.expr([ $1 ]); }
-    | JOIN_KW                           { $$ = G.expr([ $1 ]); }
-    | nm DOT nm                         { $$ = G.expr([ $1, $2, $3 ]); }
-    | nm DOT nm DOT nm                  { $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | VARIABLE                          { $$ = G.expr([ $1 ]); }
-    | expr COLLATE ID                   { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr COLLATE STRING               { $$ = G.expr([ $1, $2, $3 ]); }
+    : term                              { /* expr 01 */  $$ = G.expr([ $1 ]); }
+    | STRING                            { /* expr 01 */  $$ = G.expr([ $1 ]); } /* Separate STRING from term */
+    | LP expr RP                        { /* expr 02 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | ID                                { /* expr 03 */  $$ = G.expr([ $1 ]); }
+    | INDEXED                           { /* expr 04 */  $$ = G.expr([ $1 ]); }
+    | JOIN_KW                           { /* expr 05 */  $$ = G.expr([ $1 ]); }
+    | nm DOT nm                         { /* expr 06 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | nm DOT nm DOT nm                  { /* expr 07 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | VARIABLE                          { /* expr 08 */  $$ = G.expr([ $1 ]); }
+    | expr COLLATE ID                   { /* expr 09 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr COLLATE STRING               { /* expr 10 */  $$ = G.expr([ $1, $2, $3 ]); }
     | CAST LP expr AS typetoken RP
         { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
-    | ID LP distinct exprlist RP        { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | INDEXED LP distinct exprlist RP   { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | ID LP STAR RP                     { $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | INDEXED LP STAR RP                { $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | expr AND expr                     { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr OR expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LT expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr GT expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr GE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr EQ expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr NE expr                      { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr BITAND expr                  { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr BITOR expr                   { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LSHIFT expr                  { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr RSHIFT expr                  { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr PLUS expr                    { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr MINUS expr                   { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr STAR expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr SLASH expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr REM expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr CONCAT expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr likeop expr 		            { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr likeop expr ESCAPE expr 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr ISNULL 		                { $$ = G.expr([ $1, $2 ]); }
-    | expr NOTNULL 		                { $$ = G.expr([ $1, $2 ]); }
-    | expr NOT NULL 	                { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr IS expr 		                { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr IS NOT expr 	                { $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | NOT expr 		                    { $$ = G.expr([ $1, $2 ]); }
-    | BITNOT expr 		                { $$ = G.expr([ $1, $2 ]); }
-    | MINUS expr 		                { $$ = G.expr([ $1, $2 ]); }
-    | PLUS expr 		                { $$ = G.expr([ $1, $2 ]); }
-    | expr between_op expr AND expr 	{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op LP exprlist RP 		{ $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | LP select RP 		                { $$ = G.expr([ $1, $2, $3 ]); }
-    | expr in_op LP select RP 		    { $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op fullname 		        { $$ = G.expr([ $1, $2, $3 ]); }
-    | EXISTS LP select RP 		        { $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | ID LP distinct exprlist RP        { /* expr 11 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | INDEXED LP distinct exprlist RP   { /* expr 12 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | ID LP STAR RP                     { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | INDEXED LP STAR RP                { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | expr AND expr                     { /* expr 15 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr OR expr                      { /* expr 16 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LT expr                      { /* expr 17 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GT expr                      { /* expr 18 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GE expr                      { /* expr 19 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LE expr                      { /* expr 20 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr EQ expr                      { /* expr 21 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr NE expr                      { /* expr 22 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITAND expr                  { /* expr 23 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITOR expr                   { /* expr 24 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LSHIFT expr                  { /* expr 25 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr RSHIFT expr                  { /* expr 26 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr PLUS expr                    { /* expr 27 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr MINUS expr                   { /* expr 28 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr STAR expr 		            { /* expr 29 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr SLASH expr 		            { /* expr 30 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr REM expr 		            { /* expr 31 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr CONCAT expr 		            { /* expr 32 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr 		            { /* expr 33 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr ESCAPE expr 		{ /* expr 34 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr ISNULL 		                { /* expr 35 */  $$ = G.expr([ $1, $2 ]); }
+    | expr NOTNULL 		                { /* expr 36 */  $$ = G.expr([ $1, $2 ]); }
+    | expr NOT NULL 	                { /* expr 37 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS expr 		                { /* expr 38 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS NOT expr 	                { /* expr 39 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | NOT expr 		                    { /* expr 40 */  $$ = G.expr([ $1, $2 ]); }
+    | BITNOT expr 		                { /* expr 41 */  $$ = G.expr([ $1, $2 ]); }
+    | MINUS expr 		                { /* expr 42 */  $$ = G.expr([ $1, $2 ]); }
+    | PLUS expr 		                { /* expr 43 */  $$ = G.expr([ $1, $2 ]); }
+    | expr between_op expr AND expr 	{ /* expr 44 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr in_op LP exprlist RP 		{ /* expr 45 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | LP select RP 		                { /* expr 46 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr in_op LP select RP 		    { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr in_op fullname 		        { /* expr 48 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | EXISTS LP select RP 		        { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
     | CASE case_operand case_exprlist case_else END
-        { $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
-    | RAISE LP IGNORE RP                { $$ = G.expr([ $1, $2, $3 ]); }
+        { /* expr 50 */ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | RAISE LP IGNORE RP                { /* expr 51 */  $$ = G.expr([ $1, $2, $3 ]); }
     | RAISE LP raisetype COMMA nm RP
-        { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
+        { /* expr 52 */ $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
     ;
 
 term
@@ -722,8 +754,10 @@ term
         { $$ = $1; }
     | BLOB
         { $$ = $1; }
+/*
     | STRING
         { $$ = $1; }
+ */
     | CTIME_KW
         { $$ = $1; }
     ;
@@ -762,7 +796,7 @@ case_exprlist
 
 case_else
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 21 */ }
     | ELSE expr
         { $$ = [ $1, $2 ]; }
     ;
@@ -790,7 +824,7 @@ nexprlist
 
 idxlist_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 22 */ }
     | LP idxlist RP
         { $$ = $2; }
     ;
@@ -853,7 +887,7 @@ trigger_decl
 
 trigger_time
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 23 */ }
     | BEFORE
         { $$ = [ $1 ]; }
     | AFTER
@@ -875,14 +909,14 @@ trigger_event
 
 foreach_clause
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 24 */ }
     | FOR EACH ROW
         { $$ = [ $1, $2, $3 ]; }
     ;
 
 when_clause
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 25 */ }
     | WHEN expr
         { $$ = [ $1, $2 ]; }
     ;
@@ -903,7 +937,7 @@ trnm
 
 tridxby
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 26 */ }
     | INDEXED BY nm
         { $$ = [ $1, $2, $3 ]; }
     | NOT INDEXED
@@ -932,7 +966,7 @@ raisetype
 
 key_opt
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 27 */ }
     | KEY expr
         { $$ = [ $1, $2 ]; }
     ;
@@ -1004,7 +1038,7 @@ anylist
 
 with
     :
-        { $$ = []; }
+        { $$ = []; /* return empty array 28 */ }
     | WITH wqlist
         { $$ = [ $1, $2 ]; }
     | WITH RECURSIVE wqlist
