@@ -1,4 +1,4 @@
-/* vim: set nu ai et ts=4 sw=4 ft=yacc : */
+/* vim: set nu ai et ts=4 sw=4 ft=yacc cc=80 : */
 /*
 ^\s*[:\|].*\n\s*[;\|]
  */
@@ -9,20 +9,36 @@ var G_C = G.cmd;
 
 %}
 
+
+%right BITNOT
+
+%nonassoc LIKE_KW
+%nonassoc MATCH
+%nonassoc BETWEEN
+%nonassoc IS
+%nonassoc NOT
+
+%left BITAND
+%left BITOR
 %left LSHIFT
 %left RSHIFT
-%left GE
-%left GT
-%left LE
-%left LT
-%left BITAND
 %left PLUS
 %left MINUS
 %left STAR
 %left SLASH
 %left REM
 %left CONCAT
-%left BITOR
+
+%left LT
+%left GT
+%left GE
+%left LE
+
+%left AND
+%left OR
+
+%right EQ
+%right NE
 
 %start input
 %%
@@ -304,8 +320,10 @@ ccons
         { $$ = [ $1 ].concat($2); }
     | CHECK LP expr RP
         { $$ = [ $1, $2, $3, $4 ]; }
-    | REFERENCES nm idxlist_opt refargs
-        { $$ = [ $1, $2, $3, $4 ]; }
+    | REFERENCES nm LP idxlist RP refargs
+        { $$ = [ $1, $2, $4, $6 ]; }
+    | REFERENCES nm refargs
+        { $$ = [ $1, $2, null, $3 ]; }
     | defer_subclause
         { $$ = $1; }
     | COLLATE ID
@@ -393,9 +411,11 @@ tcons
         { $$ = [ $1, $2, $3, $4, $5 ]; }
     | CHECK LP expr RP onconf
         { $$ = [ $1, $2, $3, $4, $5 ]; }
-    | FOREIGN KEY LP idxlist RP REFERENCES nm idxlist_opt refargs \
+    | FOREIGN KEY LP idxlist RP REFERENCES nm refargs defer_subclause_opt
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9 ]; }
+    | FOREIGN KEY LP idxlist RP REFERENCES nm LP idxlist RP refargs \
       defer_subclause_opt
-        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 ]; }
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12 ]; }
     ;
 
 defer_subclause_opt
@@ -687,62 +707,66 @@ idlist
 
 expr
     : term                              { /* expr 01 */  $$ = G.expr([ $1 ]); }
-    | STRING                            { /* expr 01 */  $$ = G.expr([ $1 ]); } /* Separate STRING from term */
-    | LP expr RP                        { /* expr 02 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | ID                                { /* expr 03 */  $$ = G.expr([ $1 ]); }
-    | INDEXED                           { /* expr 04 */  $$ = G.expr([ $1 ]); }
-    | JOIN_KW                           { /* expr 05 */  $$ = G.expr([ $1 ]); }
-    | nm DOT nm                         { /* expr 06 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | nm DOT nm DOT nm                  { /* expr 07 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | VARIABLE                          { /* expr 08 */  $$ = G.expr([ $1 ]); }
-    | expr COLLATE ID                   { /* expr 09 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr COLLATE STRING               { /* expr 10 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | CAST LP expr AS typetoken RP
-        { $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
-    | ID LP distinct exprlist RP        { /* expr 11 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | INDEXED LP distinct exprlist RP   { /* expr 12 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | ID LP STAR RP                     { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | INDEXED LP STAR RP                { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | expr AND expr                     { /* expr 15 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr OR expr                      { /* expr 16 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LT expr                      { /* expr 17 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr GT expr                      { /* expr 18 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr GE expr                      { /* expr 19 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LE expr                      { /* expr 20 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr EQ expr                      { /* expr 21 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr NE expr                      { /* expr 22 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr BITAND expr                  { /* expr 23 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr BITOR expr                   { /* expr 24 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr LSHIFT expr                  { /* expr 25 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr RSHIFT expr                  { /* expr 26 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr PLUS expr                    { /* expr 27 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr MINUS expr                   { /* expr 28 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr STAR expr 		            { /* expr 29 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr SLASH expr 		            { /* expr 30 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr REM expr 		            { /* expr 31 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr CONCAT expr 		            { /* expr 32 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr likeop expr 		            { /* expr 33 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr likeop expr ESCAPE expr 		{ /* expr 34 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr ISNULL 		                { /* expr 35 */  $$ = G.expr([ $1, $2 ]); }
-    | expr NOTNULL 		                { /* expr 36 */  $$ = G.expr([ $1, $2 ]); }
-    | expr NOT NULL 	                { /* expr 37 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr IS expr 		                { /* expr 38 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr IS NOT expr 	                { /* expr 39 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | NOT expr 		                    { /* expr 40 */  $$ = G.expr([ $1, $2 ]); }
-    | BITNOT expr 		                { /* expr 41 */  $$ = G.expr([ $1, $2 ]); }
-    | MINUS expr 		                { /* expr 42 */  $$ = G.expr([ $1, $2 ]); }
-    | PLUS expr 		                { /* expr 43 */  $$ = G.expr([ $1, $2 ]); }
-    | expr between_op expr AND expr 	{ /* expr 44 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op LP exprlist RP 		{ /* expr 45 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | LP select RP 		                { /* expr 46 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr in_op LP select RP 		    { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op fullname 		        { /* expr 48 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | EXISTS LP select RP 		        { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | LP expr RP                        { /* expr 03 */  $$ = G.expr([ $1, $2, $3 ]); }
+/*
+    | STRING                            { / expr 02 /  $$ = G.expr([ $1 ]); } / Separate STRING from term /
+    | ID                                { / expr 04 /  $$ = G.expr([ $1 ]); }
+    | INDEXED                           { / expr 05 /  $$ = G.expr([ $1 ]); }
+    | JOIN_KW                           { / expr 06 /  $$ = G.expr([ $1 ]); }
+ */
+    | nm                                { /* expr nm */  $$ = G.expr([ $1 ]); }
+    | nm DOT nm                         { /* expr 07 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | nm DOT nm DOT nm                  { /* expr 08 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | VARIABLE                          { /* expr 09 */  $$ = G.expr([ $1 ]); }
+    | expr COLLATE ID                   { /* expr 10 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr COLLATE STRING               { /* expr 11 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | CAST LP expr AS typetoken RP      { /* expr 12 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
+    | ID LP distinct exprlist RP        { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | INDEXED LP distinct exprlist RP   { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | ID LP STAR RP                     { /* expr 15 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | INDEXED LP STAR RP                { /* expr 16 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+
+    | NOT expr      %prec NOT           { /* expr 42 */  $$ = G.expr([ $1, $2 ]); }
+    | BITNOT expr                       { /* expr 43 */  $$ = G.expr([ $1, $2 ]); }
+    | MINUS expr                        { /* expr 44 */  $$ = G.expr([ $1, $2 ]); }
+    | PLUS expr                         { /* expr 45 */  $$ = G.expr([ $1, $2 ]); }
+
+    | expr AND expr                     { /* expr 17 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr OR expr                      { /* expr 18 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LT expr                      { /* expr 19 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GT expr                      { /* expr 20 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr GE expr                      { /* expr 21 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LE expr                      { /* expr 22 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr EQ expr                      { /* expr 23 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr NE expr                      { /* expr 24 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITAND expr                  { /* expr 25 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr BITOR expr                   { /* expr 26 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr LSHIFT expr                  { /* expr 27 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr RSHIFT expr                  { /* expr 28 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr PLUS expr                    { /* expr 29 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr MINUS expr                   { /* expr 30 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr STAR expr                    { /* expr 31 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr SLASH expr                   { /* expr 32 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr REM expr                     { /* expr 33 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr CONCAT expr                  { /* expr 34 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr                  { /* expr 35 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr likeop expr ESCAPE expr      { /* expr 36 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr ISNULL                       { /* expr 37 */  $$ = G.expr([ $1, $2 ]); }
+    | expr NOTNULL                      { /* expr 38 */  $$ = G.expr([ $1, $2 ]); }
+    | expr NOT NULL                     { /* expr 39 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS expr                      { /* expr 40 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr IS NOT expr                  { /* expr 41 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | expr between_op expr AND expr     { /* expr 46 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr in_op LP exprlist RP         { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | LP select RP                      { /* expr 48 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr in_op LP select RP           { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr in_op fullname               { /* expr 50 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | EXISTS LP select RP               { /* expr 51 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
     | CASE case_operand case_exprlist case_else END
-        { /* expr 50 */ $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
-    | RAISE LP IGNORE RP                { /* expr 51 */  $$ = G.expr([ $1, $2, $3 ]); }
+                                        { /* expr 52 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
+    | RAISE LP IGNORE RP                { /* expr 53 */  $$ = G.expr([ $1, $2, $3 ]); }
     | RAISE LP raisetype COMMA nm RP
-        { /* expr 52 */ $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
+                                        { /* expr 54 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
     ;
 
 term
@@ -820,13 +844,6 @@ nexprlist
         { $1.push($3); }
     | expr
         { $$ = [ $1 ]; }
-    ;
-
-idxlist_opt
-    :
-        { $$ = []; /* return empty array 22 */ }
-    | LP idxlist RP
-        { $$ = $2; }
     ;
 
 idxlist
@@ -1046,10 +1063,17 @@ with
     ;
 
 wqlist
-    : nm idxlist_opt AS LP select RP
-        { $$ = [ [ $1, $2, $3, $4, $5, $6 ] ]; }
-    | wqlist COMMA nm idxlist_opt AS LP select RP
-        { $1.push([ $3, $4, $5, $6, $7, $8 ]); }
+    : wqlist_item
+        { $$ = [ $1 ]; }
+    | wqlist COMMA wqlist_item
+        { $1.push($3); }
+    ;
+
+wqlist_item
+    : nm AS LP select RP
+        { $$ = [ $1, $2, $3, $4, $5 ]; }
+    | nm LP idxlist RP AS LP select RP
+        { $$ = [ $1, $2, $3, $4, $5, $6, $7, $8 ]; }
     ;
 
 
