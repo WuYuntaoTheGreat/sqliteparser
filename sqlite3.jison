@@ -10,35 +10,18 @@ var G_C = G.cmd;
 %}
 
 
-%right BITNOT
-
 %nonassoc LIKE_KW
 %nonassoc MATCH
 %nonassoc BETWEEN
 %nonassoc IS
-%nonassoc NOT
 
-%left BITAND
-%left BITOR
-%left LSHIFT
-%left RSHIFT
-%left PLUS
-%left MINUS
-%left STAR
-%left SLASH
-%left REM
-%left CONCAT
-
-%left LT
-%left GT
-%left GE
-%left LE
-
-%left AND
-%left OR
-
-%right EQ
-%right NE
+%right EQ NE
+%left AND OR
+%left LT GT GE LE
+%left PLUS MINUS
+%left STAR SLASH REM CONCAT
+%left BITAND BITOR LSHIFT RSHIFT
+%left NOT BITNOT
 
 %start input
 %%
@@ -489,7 +472,9 @@ oneselect
 values
     : VALUES LP nexprlist RP
         { $$ = [ $3 ]; }
-    | values COMMA LP exprlist RP
+    | values COMMA LP RP
+        { $1.push(null); }
+    | values COMMA LP nexprlist RP
         { $1.push($4); }
     ;
 
@@ -566,7 +551,9 @@ seltablist
 seltabitem
     : fullname as indexed_opt on_opt using_opt
         { $$.push([ $1, $2, $3, $4, $5 ]); }
-    | fullname LP exprlist RP as on_opt using_opt
+    | fullname LP RP as on_opt using_opt
+        { $$.push([ $1, $2, $3, $4, $5, $6 ]); }
+    | fullname LP nexprlist RP as on_opt using_opt
         { $$.push([ $1, $2, $3, $4, $5, $6, $7 ]); }
     | LP select RP as on_opt using_opt
         { $$.push([ $1, $2, $3, $4, $5, $6 ]); }
@@ -721,12 +708,14 @@ expr
     | expr COLLATE ID                   { /* expr 10 */  $$ = G.expr([ $1, $2, $3 ]); }
     | expr COLLATE STRING               { /* expr 11 */  $$ = G.expr([ $1, $2, $3 ]); }
     | CAST LP expr AS typetoken RP      { /* expr 12 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]); }
-    | ID LP distinct exprlist RP        { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | INDEXED LP distinct exprlist RP   { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | ID LP distinct RP                 { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4 ]);}
+    | ID LP distinct nexprlist RP       { /* expr 13 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | INDEXED LP distinct RP            { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4 ]);}
+    | INDEXED LP distinct nexprlist RP  { /* expr 14 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
     | ID LP STAR RP                     { /* expr 15 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
     | INDEXED LP STAR RP                { /* expr 16 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
 
-    | NOT expr      %prec NOT           { /* expr 42 */  $$ = G.expr([ $1, $2 ]); }
+    | NOT expr                          { /* expr 42 */  $$ = G.expr([ $1, $2 ]); }
     | BITNOT expr                       { /* expr 43 */  $$ = G.expr([ $1, $2 ]); }
     | MINUS expr                        { /* expr 44 */  $$ = G.expr([ $1, $2 ]); }
     | PLUS expr                         { /* expr 45 */  $$ = G.expr([ $1, $2 ]); }
@@ -749,18 +738,43 @@ expr
     | expr SLASH expr                   { /* expr 32 */  $$ = G.expr([ $1, $2, $3 ]); }
     | expr REM expr                     { /* expr 33 */  $$ = G.expr([ $1, $2, $3 ]); }
     | expr CONCAT expr                  { /* expr 34 */  $$ = G.expr([ $1, $2, $3 ]); }
+
     | expr likeop expr                  { /* expr 35 */  $$ = G.expr([ $1, $2, $3 ]); }
     | expr likeop expr ESCAPE expr      { /* expr 36 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr NOT likeop expr              { /* expr 35 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+    | expr NOT likeop expr ESCAPE expr  { /* expr 36 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]);}
+
     | expr ISNULL                       { /* expr 37 */  $$ = G.expr([ $1, $2 ]); }
     | expr NOTNULL                      { /* expr 38 */  $$ = G.expr([ $1, $2 ]); }
     | expr NOT NULL                     { /* expr 39 */  $$ = G.expr([ $1, $2, $3 ]); }
     | expr IS expr                      { /* expr 40 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr IS NOT expr                  { /* expr 41 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
-    | expr between_op expr AND expr     { /* expr 46 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op LP exprlist RP         { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+/*
+ * ========================================
+ * FIXME: The rule 'expr IS NOT expr' always
+ * got reduce-shift conflict with other
+ * terminal combination, such as:
+ * 'expr IS (NOT expr)'
+ * ========================================
+ *
+ *  | expr IS NOT expr                  { / expr 41 /  $$ = G.expr([ $1, $2, $3, $4 ]); }
+ */
+    | expr BETWEEN expr AND expr        { /* expr 46 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr NOT BETWEEN expr AND expr    { /* expr 46 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]);}
+
+/*
+ * Will this really happen ?
+ *  | expr in_op LP RP                  { / expr 47 /  $$ = G.expr([ $1, $2, $3, $4 ]);}
+ */
+    | expr IN LP nexprlist RP           { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr NOT IN LP nexprlist RP       { /* expr 47 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]);}
+
     | LP select RP                      { /* expr 48 */  $$ = G.expr([ $1, $2, $3 ]); }
-    | expr in_op LP select RP           { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
-    | expr in_op fullname               { /* expr 50 */  $$ = G.expr([ $1, $2, $3 ]); }
+
+    | expr IN LP select RP              { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]);}
+    | expr IN fullname                  { /* expr 50 */  $$ = G.expr([ $1, $2, $3 ]); }
+    | expr NOT IN LP select RP          { /* expr 49 */  $$ = G.expr([ $1, $2, $3, $4, $5, $6 ]);}
+    | expr NOT IN fullname              { /* expr 50 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
+
     | EXISTS LP select RP               { /* expr 51 */  $$ = G.expr([ $1, $2, $3, $4 ]); }
     | CASE case_operand case_exprlist case_else END
                                         { /* expr 52 */  $$ = G.expr([ $1, $2, $3, $4, $5 ]); }
@@ -779,8 +793,8 @@ term
     | BLOB
         { $$ = $1; }
 /*
-    | STRING
-        { $$ = $1; }
+ *    | STRING
+ *        { $$ = $1; }
  */
     | CTIME_KW
         { $$ = $1; }
@@ -791,24 +805,26 @@ likeop
         { $$ = [ $1 ]; }
     | MATCH
         { $$ = [ $1 ]; }
-    | NOT LIKE_KW
-        { $$ = [ $1, $2 ]; }
-    | NOT MATCH
-        { $$ = [ $1, $2 ]; }
-    ;
-
-between_op
-    : BETWEEN
-        { $$ = [ $1 ]; }
-    | NOT BETWEEN
-        { $$ = [ $1, $2 ]; }
-    ;
-
-in_op
-    : IN
-        { $$ = [ $1 ]; }
-    | NOT IN
-        { $$ = [ $1, $2 ]; }
+/*
+ *    | NOT LIKE_KW
+ *        { $$ = [ $1, $2 ]; }
+ *    | NOT MATCH
+ *        { $$ = [ $1, $2 ]; }
+ *    ;
+ *
+ *between_op
+ *    : BETWEEN
+ *        { $$ = [ $1 ]; }
+ *    | NOT BETWEEN
+ *        { $$ = [ $1, $2 ]; }
+ *    ;
+ *
+ *in_op
+ *    : IN
+ *        { $$ = [ $1 ]; }
+ *    | NOT IN
+ *        { $$ = [ $1, $2 ]; }
+ */
     ;
 
 case_exprlist
@@ -830,13 +846,15 @@ case_operand
         { $$ = null; }
     | expr
         { $$ = $1; }
-    ;
-
-exprlist
-    :
-        { $$ = null; }
-    | nexprlist
-        { $$ = $1; }
+/*
+ *    ;
+ *
+ *exprlist
+ *    :
+ *        { $$ = null; }
+ *    | nexprlist
+ *        { $$ = $1; }
+ */
     ;
 
 nexprlist
