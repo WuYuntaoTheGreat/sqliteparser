@@ -9,20 +9,25 @@ var G_C = G.cmd;
 
 %}
 
-
-%nonassoc LIKE_KW
-%nonassoc MATCH
-%nonassoc BETWEEN
-%nonassoc IS
-
-%right EQ NE
-%left AND OR
-%left LT GT GE LE
-%left PLUS MINUS
-%left STAR SLASH REM CONCAT
+/*
+ * Following copied from SQLITE's source file: parse.y
+ */
+%left OR
+%left AND
+%right NOT
+%left IS IS_NOT MATCH LIKE_KW BETWEEN IN ISNULL NOTNULL NE EQ
+%left GT LE LT GE
+%right ESCAPE
 %left BITAND BITOR LSHIFT RSHIFT
-%left NOT BITNOT
+%left PLUS MINUS
+%left STAR SLASH REM
+%left CONCAT
+%left COLLATE
+%right BITNOT
 
+/*
+ * Start condition of SQL file.
+ */
 %start input
 %%
 
@@ -748,16 +753,8 @@ expr
     | expr NOTNULL                      { /* expr 38 */  $$ = G.expr([$1, $2]); }
     | expr NOT NULL                     { /* expr 39 */  $$ = G.expr([$1, $2, $3]); }
     | expr IS expr                      { /* expr 40 */  $$ = G.expr([$1, $2, $3]); }
-/*
- * ========================================
- * FIXME: The rule 'expr IS NOT expr' always
- * got reduce-shift conflict with other
- * terminal combination, such as:
- * 'expr IS (NOT expr)'
- * ========================================
- *
- *  | expr IS NOT expr                  { / expr 41 /  $$ = G.expr([$1, $2, $3, $4]); }
- */
+    | expr IS_NOT expr                  { / expr 41 /  $$ = G.expr([$1, $2, $3, $4]); }
+ 
     | expr BETWEEN expr AND expr        { /* expr 46 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
     | expr NOT BETWEEN expr AND expr    { /* expr 46 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]);}
 

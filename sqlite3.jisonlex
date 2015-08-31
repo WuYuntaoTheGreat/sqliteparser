@@ -116,6 +116,8 @@ var G_T = G.terminal;
 "ANY"           return "ANY";
 "OR"            return "OR";
 "AND"           return "AND";
+"IS"[ \t\r\n]+"NOT"
+                return "IS_NOT"; /* 'IS NOT' can be managed by yacc :( */
 "IS"            return "IS";
 "BETWEEN"       return "BETWEEN";
 "IN"            return "IN";
