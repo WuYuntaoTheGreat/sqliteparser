@@ -212,7 +212,7 @@ var G_T = G.terminal;
 "["[^\]]*"]"                        {
                 yytext = G_T.id(yytext);
                 return "ID";        }
-[_A-Za-z][_A-Za-z0-9]+              {
+[_A-Za-z][_A-Za-z0-9]*              {
                 yytext = G_T.id(yytext);
                 return "ID";        }
 
