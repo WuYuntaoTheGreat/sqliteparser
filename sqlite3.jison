@@ -282,17 +282,11 @@ ccons
         { $$ = [$1, $2]; }
     | DEFAULT term
         { $$ = [$1, $2]; }
-    | DEFAULT STRING            /* Separate STRING from term */
-        { $$ = [$1, $2]; }
     | DEFAULT LP expr RP
         { $$ = [$1, $2, $3, $4]; }
     | DEFAULT PLUS term
         { $$ = [$1, $2, $3]; }
-    | DEFAULT PLUS STRING       /* Separate STRING from term */
-        { $$ = [$1, $2, $3]; }
     | DEFAULT MINUS term
-        { $$ = [$1, $2, $3]; }
-    | DEFAULT MINUS STRING      /* Separate STRING from term */
         { $$ = [$1, $2, $3]; }
     | DEFAULT ID
         { $$ = [$1, $2]; }
@@ -698,7 +692,7 @@ idlist
     ;
 
 expr
-    : term                              { /* expr 01 */  $$ = G.expr([$1]); }
+    : term_nostring                     { /* expr 01 */  $$ = G.expr([$1]); }
     | LP expr RP                        { /* expr 03 */  $$ = G.expr([$1, $2, $3]); }
 /*
     | STRING                            { / expr 02 /  $$ = G.expr([$1]); } / Separate STRING from term /
@@ -780,21 +774,16 @@ expr
                                         { /* expr 54 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
     ;
 
+term_nostring
+    : NULL                  { $$ = $1; }
+    | INTEGER               { $$ = $1; }
+    | FLOAT                 { $$ = $1; }
+    | BLOB                  { $$ = $1; }
+    | CTIME_KW              { $$ = $1; }
+    ;
 term
-    : NULL
-        { $$ = $1; }
-    | INTEGER
-        { $$ = $1; }
-    | FLOAT
-        { $$ = $1; }
-    | BLOB
-        { $$ = $1; }
-/*
- *    | STRING
- *        { $$ = $1; }
- */
-    | CTIME_KW
-        { $$ = $1; }
+    : term_nostring         { $$ = $1; }
+    | STRING                { $$ = $1; }
     ;
 
 likeop
