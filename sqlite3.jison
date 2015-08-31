@@ -47,7 +47,7 @@ ecmd
     : SEMI              { $$ = null; }
     | cmd SEMI          { $$ = $1; $$.explain = []; }
     | EXPLAIN cmd SEMI  { $$ = $2; $$.explain = [$1]; }
-    | EXPLAIN QUERY PLAN cmd SEMI 
+    | EXPLAIN QUERY PLAN cmd SEMI
                         { $$ = $4; $$.explain = [$1, $2, $3]; }
     ;
 
@@ -508,26 +508,6 @@ from
         { $$ = []; /* return empty array 11 */ }
     | FROM seltablist
         { $$ = [$1, $2]; }
-/*
-    ;
-
-stl_prefix
-    :
-        { $$ = null; }
-    | seltablist joinop
-        { $$ = $1.concat($2); }
-    ;
-
-seltablist
-    : stl_prefix fullname as indexed_opt on_opt using_opt
-        { $$ = null != $1 ? $1 : []; $$.push([$2, $3, $4, $5, $6]); }
-    | stl_prefix fullname LP exprlist RP as on_opt using_opt
-        { $$ = null != $1 ? $1 : []; $$.push([$2, $3, $4, $5, $6, $7, $8]); }
-    | stl_prefix LP select RP as on_opt using_opt
-        { $$ = null != $1 ? $1 : []; $$.push([$2, $3, $4, $5, $6, $7]); }
-    | stl_prefix LP seltablist RP as on_opt using_opt
-        { $$ = null != $1 ? $1 : []; $$.push([$2, $3, $4, $5, $6, $7]); }
- */
     ;
 
 seltablist
@@ -740,8 +720,10 @@ expr
     /* Between */
     /*
      * FIXME: I don't know how to handle this. The original BNF says:
-     *      expr BETWEEN expr AND expr
-     *      expr NOT BETWEEN expr AND expr
+     *      ...
+     *      | expr BETWEEN expr AND expr
+     *      | expr NOT BETWEEN expr AND expr
+     *      ...
      * But this always cause Reduce/Reduce conflict because token 'AND'
      * may appear in the 3rd expr non-terminal, though sematically this
      * is not a big issue, because token 'AND' always yield a boolean
@@ -754,14 +736,17 @@ expr
     | expr NOT BETWEEN expr { $$ = G.expr([$1, $2, $3, $4]); }
 
     /* in */
-    | expr IN LP RP                     { $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | expr IN LP nexprlist RP           { $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | expr IN LP select RP              { $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | expr IN nm dbnm                   { $$ = G.expr([$1, $2, $3, $4]); }
-    | expr NOT IN LP RP                 { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
-    | expr NOT IN LP nexprlist RP       { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
-    | expr NOT IN LP select RP          { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
-    | expr NOT IN nm dbnm               { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN LP RP         { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN LP nexprlist RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN LP select RP  { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN nm dbnm       { $$ = G.expr([$1, $2, $3, $4]); }
+    | expr NOT IN LP RP     { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN LP nexprlist RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN LP select RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN nm dbnm   { $$ = G.expr([$1, $2, $3, $4, $5]); }
      */
 
     /* Select */
@@ -774,10 +759,14 @@ expr
     | expr NOT LIKE_KW expr { $$ = G.expr([$1, $2, $3, $4]); }
     | expr NOT MATCH expr   { $$ = G.expr([$1, $2, $3, $4]); }
 
-    | expr LIKE_KW expr ESCAPE expr     { $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | expr MATCH expr ESCAPE expr       { $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | expr NOT LIKE_KW expr ESCAPE expr { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
-    | expr NOT MATCH expr ESCAPE expr   { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr LIKE_KW expr ESCAPE expr
+                            { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr MATCH expr ESCAPE expr
+                            { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr NOT LIKE_KW expr ESCAPE expr
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT MATCH expr ESCAPE expr
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
 
     /* IS NULL / NOT NULL */
     | expr ISNULL           { $$ = G.expr([$1, $2]); }
@@ -785,12 +774,16 @@ expr
     | expr NOT NULL         { $$ = G.expr([$1, $2, $3]); }
 
     /* Case */
-    | CASE case_exprlist case_else END      { $$ = G.expr([$1, $2, $3, $4]); }
-    | CASE expr case_exprlist case_else END { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | CASE case_exprlist case_else END
+                            { $$ = G.expr([$1, $2, $3, $4]); }
+    | CASE expr case_exprlist case_else END
+                            { $$ = G.expr([$1, $2, $3, $4, $5]); }
 
     /* Raise */
-    | RAISE LP IGNORE RP                { $$ = G.expr([$1, $2, $3, $4]); }
-    | RAISE LP raisetype COMMA nm RP    { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | RAISE LP IGNORE RP
+                            { $$ = G.expr([$1, $2, $3, $4]); }
+    | RAISE LP raisetype COMMA nm RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
     ;
 
 term_nostring
@@ -810,26 +803,6 @@ likeop
         { $$ = [$1]; }
     | MATCH
         { $$ = [$1]; }
-/*
- *    | NOT LIKE_KW
- *        { $$ = [$1, $2]; }
- *    | NOT MATCH
- *        { $$ = [$1, $2]; }
- *    ;
- *
- *between_op
- *    : BETWEEN
- *        { $$ = [$1]; }
- *    | NOT BETWEEN
- *        { $$ = [$1, $2]; }
- *    ;
- *
- *in_op
- *    : IN
- *        { $$ = [$1]; }
- *    | NOT IN
- *        { $$ = [$1, $2]; }
- */
     ;
 
 case_exprlist
@@ -851,15 +824,6 @@ case_operand
         { $$ = null; }
     | expr
         { $$ = $1; }
-/*
- *    ;
- *
- *exprlist
- *    :
- *        { $$ = null; }
- *    | nexprlist
- *        { $$ = $1; }
- */
     ;
 
 nexprlist
@@ -1042,22 +1006,16 @@ vtabarglist
 vtabarg
     :
     /*
-     * ===========================================
-     * FIXME: The virtual table creation statement
-     * can take zero or more comma-separated
-     * arguments. The arguments can be just about
-     * ANY text as long as it has balanced
-     * parentheses. For example:
+     * FIXME: The virtual table creation statement can take zero or more
+     * comma-separated arguments. The arguments can be just about ANY text as
+     * long as it has balanced parentheses. For example:
      *
      * CREATE VIRTUAL TABLE IF NOT EXISTS \
      *     tablename USING module ( arg, arg ... );
      *
-     * The source code of Sqlite itself use the
-     * Terminal "ANY", which I don't know if is a
-     * key word of lemon parser, but it's surely
-     * not work in Jison. I need to figure out how
-     * to implement this.
-     * ===========================================
+     * The source code of Sqlite itself use the Terminal "ANY", which I don't
+     * know if is a key word of lemon parser, but it's surely not work in
+     * Jison. I need to figure out how to implement this.
      */
     | vtabarg vtabargtoken
         { /* Unimplemented */  }
