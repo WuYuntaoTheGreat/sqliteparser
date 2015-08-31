@@ -39,21 +39,16 @@ input
     ;
 
 cmdlist
-    : cmdlist ecmd
-        { if($2){ $1.push($2); } }
-    | ecmd
-        { $$ = $1 ? [$1] : []; }
+    : cmdlist ecmd      { if($2){ $1.push($2); } }
+    | ecmd              { $$ = $1 ? [$1] : []; }
     ;
 
 ecmd
-    : SEMI
-        { $$ = null; }
-    | cmd SEMI
-        { $$ = $1; $$.explain = []; }
-    | EXPLAIN cmd SEMI
-        { $$ = $2; $$.explain = [$1]; }
-    | EXPLAIN QUERY PLAN cmd SEMI
-        { $$ = $4; $$.explain = [$1, $2, $3]; }
+    : SEMI              { $$ = null; }
+    | cmd SEMI          { $$ = $1; $$.explain = []; }
+    | EXPLAIN cmd SEMI  { $$ = $2; $$.explain = [$1]; }
+    | EXPLAIN QUERY PLAN cmd SEMI 
+                        { $$ = $4; $$.explain = [$1, $2, $3]; }
     ;
 
 cmd
@@ -223,13 +218,8 @@ columnid
 nm
     : ID
         { $$ = G.nm($1, "ID"); }
-/*
- * This caused conflict when 'NOT INDEXED' encountered.
- */
-/*
     | INDEXED
         { $$ = G.nm($1, "INDEXED"); }
- */
     | STRING
         { $$ = G.nm($1, "STRING"); }
     | JOIN_KW
@@ -692,86 +682,115 @@ idlist
     ;
 
 expr
-    : term_nostring                     { /* expr 01 */  $$ = G.expr([$1]); }
-    | LP expr RP                        { /* expr 03 */  $$ = G.expr([$1, $2, $3]); }
-/*
-    | STRING                            { / expr 02 /  $$ = G.expr([$1]); } / Separate STRING from term /
-    | ID                                { / expr 04 /  $$ = G.expr([$1]); }
-    | INDEXED                           { / expr 05 /  $$ = G.expr([$1]); }
-    | JOIN_KW                           { / expr 06 /  $$ = G.expr([$1]); }
- */
-    | nm                                { /* expr nm */  $$ = G.expr([$1]); }
-    | nm DOT nm                         { /* expr 07 */  $$ = G.expr([$1, $2, $3]); }
-    | nm DOT nm DOT nm                  { /* expr 08 */  $$ = G.expr([$1, $2, $3, $4]); }
-    | VARIABLE                          { /* expr 09 */  $$ = G.expr([$1]); }
-    | expr COLLATE ID                   { /* expr 10 */  $$ = G.expr([$1, $2, $3]); }
-    | expr COLLATE STRING               { /* expr 11 */  $$ = G.expr([$1, $2, $3]); }
-    | CAST LP expr AS typetoken RP      { /* expr 12 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
-    | ID LP distinct RP                 { /* expr 13 */  $$ = G.expr([$1, $2, $3, $4]);}
-    | ID LP distinct nexprlist RP       { /* expr 13 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | INDEXED LP distinct RP            { /* expr 14 */  $$ = G.expr([$1, $2, $3, $4]);}
-    | INDEXED LP distinct nexprlist RP  { /* expr 14 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | ID LP STAR RP                     { /* expr 15 */  $$ = G.expr([$1, $2, $3, $4]); }
-    | INDEXED LP STAR RP                { /* expr 16 */  $$ = G.expr([$1, $2, $3, $4]); }
+    : term_nostring         { $$ = G.expr($1); }
+    | nm                    { $$ = G.expr($1); }
+    | nm DOT nm             { $$ = G.expr([$1, $2, $3]); }
+    | nm DOT nm DOT nm      { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | VARIABLE              { $$ = G.expr("VARIABLE" + $1.position + $1.name); }
 
-    | NOT expr                          { /* expr 42 */  $$ = G.expr([$1, $2]); }
-    | BITNOT expr                       { /* expr 43 */  $$ = G.expr([$1, $2]); }
-    | MINUS expr                        { /* expr 44 */  $$ = G.expr([$1, $2]); }
-    | PLUS expr                         { /* expr 45 */  $$ = G.expr([$1, $2]); }
+    /* parentheses and cast */
+    | LP expr RP            { $$ = G.expr([$1, $2, $3]); }
+    | CAST LP expr AS typetoken RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
 
-    | expr AND expr                     { /* expr 17 */  $$ = G.expr([$1, $2, $3]); }
-    | expr OR expr                      { /* expr 18 */  $$ = G.expr([$1, $2, $3]); }
-    | expr LT expr                      { /* expr 19 */  $$ = G.expr([$1, $2, $3]); }
-    | expr GT expr                      { /* expr 20 */  $$ = G.expr([$1, $2, $3]); }
-    | expr GE expr                      { /* expr 21 */  $$ = G.expr([$1, $2, $3]); }
-    | expr LE expr                      { /* expr 22 */  $$ = G.expr([$1, $2, $3]); }
-    | expr EQ expr                      { /* expr 23 */  $$ = G.expr([$1, $2, $3]); }
-    | expr NE expr                      { /* expr 24 */  $$ = G.expr([$1, $2, $3]); }
-    | expr BITAND expr                  { /* expr 25 */  $$ = G.expr([$1, $2, $3]); }
-    | expr BITOR expr                   { /* expr 26 */  $$ = G.expr([$1, $2, $3]); }
-    | expr LSHIFT expr                  { /* expr 27 */  $$ = G.expr([$1, $2, $3]); }
-    | expr RSHIFT expr                  { /* expr 28 */  $$ = G.expr([$1, $2, $3]); }
-    | expr PLUS expr                    { /* expr 29 */  $$ = G.expr([$1, $2, $3]); }
-    | expr MINUS expr                   { /* expr 30 */  $$ = G.expr([$1, $2, $3]); }
-    | expr STAR expr                    { /* expr 31 */  $$ = G.expr([$1, $2, $3]); }
-    | expr SLASH expr                   { /* expr 32 */  $$ = G.expr([$1, $2, $3]); }
-    | expr REM expr                     { /* expr 33 */  $$ = G.expr([$1, $2, $3]); }
-    | expr CONCAT expr                  { /* expr 34 */  $$ = G.expr([$1, $2, $3]); }
+    /* COLLATE */
+    | expr COLLATE ID       { $$ = G.expr([$1, $2, $3]); }
+    | expr COLLATE STRING   { $$ = G.expr([$1, $2, $3]); }
 
-    | expr likeop expr                  { /* expr 35 */  $$ = G.expr([$1, $2, $3]); }
-    | expr likeop expr ESCAPE expr      { /* expr 36 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | expr NOT likeop expr              { /* expr 35 */  $$ = G.expr([$1, $2, $3, $4]); }
-    | expr NOT likeop expr ESCAPE expr  { /* expr 36 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]);}
+    /* Function like */
+    | ID LP distinct RP     { $$ = G.expr([$1, $2, $3, $4]);}
+    | ID LP distinct nexprlist RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5]);}
+    | INDEXED LP distinct RP{ $$ = G.expr([$1, $2, $3, $4]);}
+    | INDEXED LP distinct nexprlist RP
+                            { $$ = G.expr([$1, $2, $3, $4, $5]);}
+    | ID LP STAR RP         { $$ = G.expr([$1, $2, $3, $4]); }
+    | INDEXED LP STAR RP    { $$ = G.expr([$1, $2, $3, $4]); }
 
-    | expr ISNULL                       { /* expr 37 */  $$ = G.expr([$1, $2]); }
-    | expr NOTNULL                      { /* expr 38 */  $$ = G.expr([$1, $2]); }
-    | expr NOT NULL                     { /* expr 39 */  $$ = G.expr([$1, $2, $3]); }
-    | expr IS expr                      { /* expr 40 */  $$ = G.expr([$1, $2, $3]); }
-    | expr IS_NOT expr                  { / expr 41 /  $$ = G.expr([$1, $2, $3, $4]); }
- 
-    | expr BETWEEN expr AND expr        { /* expr 46 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | expr NOT BETWEEN expr AND expr    { /* expr 46 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]);}
+    /* Unary operators */
+    | NOT expr              { $$ = G.expr([$1, $2]); }
+    | BITNOT expr           { $$ = G.expr([$1, $2]); }
+    | MINUS expr            { $$ = G.expr([$1, $2]); }
+    | PLUS expr             { $$ = G.expr([$1, $2]); }
 
-/*
- * Will this really happen ?
- *  | expr in_op LP RP                  { / expr 47 /  $$ = G.expr([$1, $2, $3, $4]);}
- */
-    | expr IN LP nexprlist RP           { /* expr 47 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | expr NOT IN LP nexprlist RP       { /* expr 47 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]);}
+    /* Binary operators */
+    | expr AND expr         { $$ = G.expr([$1, $2, $3]); }
+    | expr OR expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr LT expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr GT expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr GE expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr LE expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr EQ expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr NE expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr BITAND expr      { $$ = G.expr([$1, $2, $3]); }
+    | expr BITOR expr       { $$ = G.expr([$1, $2, $3]); }
+    | expr LSHIFT expr      { $$ = G.expr([$1, $2, $3]); }
+    | expr RSHIFT expr      { $$ = G.expr([$1, $2, $3]); }
+    | expr PLUS expr        { $$ = G.expr([$1, $2, $3]); }
+    | expr MINUS expr       { $$ = G.expr([$1, $2, $3]); }
+    | expr STAR expr        { $$ = G.expr([$1, $2, $3]); }
+    | expr SLASH expr       { $$ = G.expr([$1, $2, $3]); }
+    | expr REM expr         { $$ = G.expr([$1, $2, $3]); }
+    | expr CONCAT expr      { $$ = G.expr([$1, $2, $3]); }
 
-    | LP select RP                      { /* expr 48 */  $$ = G.expr([$1, $2, $3]); }
+    /* IS */
+    | expr IS expr          { $$ = G.expr([$1, $2, $3]); }
+    | expr IS_NOT expr      { $$ = G.expr([$1, 'IS_NOT', $3]); }
 
-    | expr IN LP select RP              { /* expr 49 */  $$ = G.expr([$1, $2, $3, $4, $5]);}
-    | expr IN fullname                  { /* expr 50 */  $$ = G.expr([$1, $2, $3]); }
-    | expr NOT IN LP select RP          { /* expr 49 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]);}
-    | expr NOT IN fullname              { /* expr 50 */  $$ = G.expr([$1, $2, $3, $4]); }
+    /* Between */
+    /*
+     * FIXME: I don't know how to handle this. The original BNF says:
+     *      expr BETWEEN expr AND expr
+     *      expr NOT BETWEEN expr AND expr
+     * But this always cause Reduce/Reduce conflict because token 'AND'
+     * may appear in the 3rd expr non-terminal, though sematically this
+     * is not a big issue, because token 'AND' always yield a boolean
+     * value which can not be used by token 'BETWEEN', so it must not be
+     * part of 3rd expr.
+     * For example:
+     *      expr BETWEEN expr AND expr AND expr
+     */
+    | expr BETWEEN expr     { $$ = G.expr([$1, $2, $3]); }
+    | expr NOT BETWEEN expr { $$ = G.expr([$1, $2, $3, $4]); }
 
-    | EXISTS LP select RP               { /* expr 51 */  $$ = G.expr([$1, $2, $3, $4]); }
-    | CASE case_operand case_exprlist case_else END
-                                        { /* expr 52 */  $$ = G.expr([$1, $2, $3, $4, $5]); }
-    | RAISE LP IGNORE RP                { /* expr 53 */  $$ = G.expr([$1, $2, $3]); }
-    | RAISE LP raisetype COMMA nm RP
-                                        { /* expr 54 */  $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    /* in */
+    | expr IN LP RP                     { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN LP nexprlist RP           { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN LP select RP              { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr IN nm dbnm                   { $$ = G.expr([$1, $2, $3, $4]); }
+    | expr NOT IN LP RP                 { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN LP nexprlist RP       { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN LP select RP          { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT IN nm dbnm               { $$ = G.expr([$1, $2, $3, $4, $5]); }
+     */
+
+    /* Select */
+    | LP select RP          { $$ = G.expr([$1, $2, $3]); }
+    | EXISTS LP select RP   { $$ = G.expr([$1, $2, $3, $4]); }
+
+    /* LIKE or NOT LIKE */
+    | expr LIKE_KW expr     { $$ = G.expr([$1, $2, $3]); }
+    | expr MATCH expr       { $$ = G.expr([$1, $2, $3]); }
+    | expr NOT LIKE_KW expr { $$ = G.expr([$1, $2, $3, $4]); }
+    | expr NOT MATCH expr   { $$ = G.expr([$1, $2, $3, $4]); }
+
+    | expr LIKE_KW expr ESCAPE expr     { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr MATCH expr ESCAPE expr       { $$ = G.expr([$1, $2, $3, $4, $5]); }
+    | expr NOT LIKE_KW expr ESCAPE expr { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+    | expr NOT MATCH expr ESCAPE expr   { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
+
+    /* IS NULL / NOT NULL */
+    | expr ISNULL           { $$ = G.expr([$1, $2]); }
+    | expr NOTNULL          { $$ = G.expr([$1, $2]); }
+    | expr NOT NULL         { $$ = G.expr([$1, $2, $3]); }
+
+    /* Case */
+    | CASE case_exprlist case_else END      { $$ = G.expr([$1, $2, $3, $4]); }
+    | CASE expr case_exprlist case_else END { $$ = G.expr([$1, $2, $3, $4, $5]); }
+
+    /* Raise */
+    | RAISE LP IGNORE RP                { $$ = G.expr([$1, $2, $3, $4]); }
+    | RAISE LP raisetype COMMA nm RP    { $$ = G.expr([$1, $2, $3, $4, $5, $6]); }
     ;
 
 term_nostring
