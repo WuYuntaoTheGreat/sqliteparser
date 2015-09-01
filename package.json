@@ -1,20 +1,30 @@
 {
-  "name": "sqlite_parser",
+  "name": "sqliteparser",
   "version": "1.0.0",
-  "description": "A jison parser for sqlite SQL grammar",
+  "description": "SQL language parser for Sqlite in Node.js",
   "main": "index.js",
+  "dependencies": {
+    "coffee-script": "^1.9.3"
+  },
+  "devDependencies": {
+    "jison": "^0.4.15"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers coffee:coffee-script/register"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WuYuntaoTheGreat/sqliteparser.git"
   },
   "keywords": [
-    "sqlite",
-    "grammar",
+    "SQL",
+    "SQLite",
     "parser"
   ],
   "author": "Wu Yuntao",
   "license": "MIT",
-  "dependencies": {
-    "coffee-script": "^1.9.3",
-    "jison": "^0.4.15"
-  }
+  "bugs": {
+    "url": "https://github.com/WuYuntaoTheGreat/sqliteparser/issues"
+  },
+  "homepage": "https://github.com/WuYuntaoTheGreat/sqliteparser#readme"
 }
