@@ -4,7 +4,7 @@
  */
 %{
 require("coffee-script/register");
-var G = require("../big_handler");
+var G = require("./big_handler");
 var G_C = G.cmd;
 
 %}

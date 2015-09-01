@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+# vim: set nu ai et ts=4 sw=4:
+
+if [ ! -f ./package.json ]; then
+    echo "Please run this script from project root dir."
+    exit -2
+fi
+
+JISON=./node_modules/.bin/jison
+NODE=node
+
+YACC=./src/parser.jison
+LEX=./src/parser.jisonlex
+EXEC=./src/parser.js
+
+echo "BUILDING ..."
+if [ "$1" != "-r" ]; then
+    $JISON $YACC $LEX -o $EXEC
+    if [ "$?" != "0" ]; then
+        echo "Generating parser failed!"
+        exit -1
+    fi
+fi
+echo "DONE!"
+

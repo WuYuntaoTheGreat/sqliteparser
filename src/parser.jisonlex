@@ -1,7 +1,7 @@
 /* vim: set nu ai et ts=4 sw=4 ft=lex: */
 %{
 require("coffee-script/register");
-var G = require("../big_handler");
+var G = require("./big_handler");
 var G_T = G.terminal;
 
 %}
