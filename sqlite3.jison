@@ -172,9 +172,9 @@ table_options
     ;
 
 columnlist
-    : columnlist COMMA column
+    : column            { $$ = [$1]; }
+    | columnlist COMMA column
                         { $1.push($3); }
-    | column            { $$ = [$1]; }
     ;
 
 column
@@ -460,9 +460,9 @@ orderby_opt
     ;
 
 sortlist
-    : sortlist COMMA expr sortorder
+    : expr sortorder    { $$ = [ [$1, $2] ]; }
+    | sortlist COMMA expr sortorder
                         { $1.append([$1, $2]); }
-    | expr sortorder    { $$ = [ [$1, $2] ]; }
     ;
 
 sortorder
