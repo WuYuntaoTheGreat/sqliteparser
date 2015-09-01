@@ -52,10 +52,7 @@ ecmd
     ;
 
 cmd
-    : BEGIN             { $$ = G_C.begin_trans(null, []); }
-    | BEGIN transtype   { $$ = G_C.begin_trans($2, []); }
-    | BEGIN trans_opt   { $$ = G_C.begin_trans(null, $2); }
-    | BEGIN transtype trans_opt
+    : BEGIN transtype trans_opt
                         { $$ = G_C.begin_trans($2, $3); }
 
     | COMMIT trans_opt  { $$ = G_C.commit_trans($2); }
@@ -134,12 +131,14 @@ cmd
     ;
 
 trans_opt
-    : TRANSACTION       { $$ = [$1]; }
+    :                   { $$ = []; }
+    | TRANSACTION       { $$ = [$1]; }
     | TRANSACTION nm    { $$ = [$1, $2]; }
     ;
 
 transtype
-    : DEFERRED          { $$ = $1; }
+    :                   { $$ = null; }
+    | DEFERRED          { $$ = $1; }
     | IMMEDIATE         { $$ = $1; }
     | EXCLUSIVE         { $$ = $1; }
     ;
